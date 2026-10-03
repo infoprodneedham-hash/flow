@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Flow Production Planner</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              accent: '#06b6d4'
+            },
+            surface: {
+              850: '#141a29',
+              900: '#0f172a',
+              950: '#080d1a'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .glass-card {
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-surface-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Global Header -->
+  <header class="no-print sticky top-0 z-30 bg-surface-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <button id="mobileMenuBtn" class="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-brand-accent flex items-center justify-center shadow-lg shadow-brand-500/20">
+        <i class="fa-solid fa-compass-drafting text-white text-base"></i>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Design Flow
+          <span class="text-xs uppercase px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 font-semibold border border-brand-500/30">Planner</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Digital Product Ideation &amp; Production Management</p>
+      </div>
+    </div>
+
+    <!-- Active Project Quick Switcher & Global Actions -->
+    <div class="flex items-center space-x-2 sm:space-x-3">
+      <div class="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700">
+        <i class="fa-regular fa-folder-open text-brand-400 text-xs sm:text-sm"></i>
+        <select id="headerProjectSelect" class="bg-transparent text-xs sm:text-sm text-slate-200 focus:outline-none cursor-pointer font-medium max-w-[130px] sm:max-w-[200px] truncate">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <button id="exportBriefBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs sm:text-sm font-medium flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-file-export text-brand-400"></i>
+        <span class="hidden md:inline">Export Plan</span>
+      </button>
+
+      <button id="quickAddProjectBtn" class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs sm:text-sm shadow-md shadow-brand-600/30 flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-plus text-xs"></i>
+        <span class="hidden sm:inline">New Project</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed top-16 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- App Workspace (Sidebar + Main View) -->
+  <div class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+    
+    <!-- Sidebar / Projects Directory -->
+    <aside id="sidebar" class="no-print fixed inset-y-0 left-0 z-40 w-72 bg-surface-900 border-r border-slate-800 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out flex flex-col">
+      <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Your Projects</span>
+        <button id="newProjectSidebarBtn" class="text-xs font-semibold text-brand-400 hover:text-brand-300 flex items-center gap-1 transition">
+          <i class="fa-solid fa-circle-plus"></i> Add
+        </button>
+      </div>
+
+      <!-- Search Projects -->
+      <div class="px-3 py-2 border-b border-slate-800/50">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+          <input type="text" id="projectSearchInput" placeholder="Filter projects..." class="w-full bg-slate-800/70 border border-slate-700 text-xs rounded-lg pl-8 pr-3 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+        </div>
+      </div>
+
+      <!-- Projects List Container -->
+      <div id="projectsList" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Workspace Stats footer -->
+      <div class="p-3 bg-surface-950/80 border-t border-slate-800 text-xs text-slate-400 flex justify-between items-center">
+        <span id="activeProjectsCount">0 Projects Active</span>
+        <button id="backupAllBtn" title="Download entire workspace JSON backup" class="hover:text-white transition">
+          <i class="fa-solid fa-database mr-1"></i>Backup
+        </button>
+      </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 lg:hidden hidden backdrop-blur-sm"></div>
+
+    <!-- Main Workspace Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-surface-950 overflow-y-auto">
+
+      <!-- Navigation Tabs & Active Project Banner -->
+      <div class="no-print bg-surface-900 border-b border-slate-800 px-4 sm:px-6 pt-4 pb-0">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="projectStatusIndicator" class="w-3.5 h-3.5 rounded-full bg-brand-500 ring-4 ring-brand-500/20"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 id="activeProjectTitle" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Active Project</h2>
+                <span id="activeProjectBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/30 font-medium">In Planning</span>
+              </div>
+              <p id="activeProjectSubheader" class="text-xs text-slate-400">Target Launch: Oct 28, 2026 &bull; Web Application</p>
+            </div>
+          </div>
+
+          <!-- Overall Progress Bar in Header -->
+          <div class="sm:w-64 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 flex flex-col justify-center">
+            <div class="flex justify-between items-center text-xs mb-1.5">
+              <span class="text-slate-400 font-medium">Production Progress</span>
+              <span id="headerProgressPct" class="font-bold text-brand-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+              <div id="headerProgressBar" class="bg-gradient-to-r from-brand-500 to-brand-accent h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Navigation Buttons -->
+        <div class="flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar border-t border-slate-800/70 pt-2">
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-brand-400 border-b-2 border-brand-500 bg-slate-800/40" data-tab="tab-overview">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Overview &amp; Scope</span>
+          </button>
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-steps">
+            <i class="fa-solid fa-list-check"></i>
+            <span>Production Pipeline</span>
+          </button>
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-competitors">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span>Market Benchmark &amp; Features</span>
+          </button>
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-calendar">
+            <i class="fa-regular fa-calendar-days"></i>
+            <span>Calendar &amp; Milestones</span>
+          </button>
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-assets">
+            <i class="fa-regular fa-images"></i>
+            <span>Mockups &amp; Visuals</span>
+          </button>
+          <button class="nav-tab px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent" data-tab="tab-notes">
+            <i class="fa-regular fa-note-sticky"></i>
+            <span>Notes &amp; Logs</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="p-4 sm:p-6 lg:p-8 space-y-6 flex-1">
+
+        <!-- TAB 1: OVERVIEW & SCOPE -->
+        <section id="tab-overview" class="tab-pane space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Col: Core Metadata & Setup -->
+            <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
+              <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                  <i class="fa-solid fa-sliders text-brand-400"></i> Project Essentials
+                </h3>
+                <span class="text-xs text-slate-400 font-mono" id="projectUidDisplay">UID: #001</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Project Name</label>
+                <input type="text" id="overviewProjectName" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500 font-semibold transition">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Platform Target</label>
+                  <select id="overviewPlatform" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                    <option value="Responsive Web App">Responsive Web App</option>
+                    <option value="Mobile App (iOS/Android)">Mobile App (iOS/Android)</option>
+                    <option value="Marketing Website / Portal">Marketing Website / Portal</option>
+                    <option value="Desktop Software">Desktop Software</option>
+                    <option value="API / Micro-SaaS Platform">API / Micro-SaaS Platform</option>
+                    <option value="E-Commerce Ecosystem">E-Commerce Ecosystem</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Current Stage</label>
+                  <select id="overviewStatus" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                    <option value="Ideation">1. Ideation</option>
+                    <option value="In Planning">2. In Planning</option>
+                    <option value="In Development">3. In Development</option>
+                    <option value="QA & Testing">4. QA & Testing</option>
+                    <option value="Launch Ready">5. Launch Ready</option>
+                    <option value="Completed">6. Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Target Launch</label>
+                  <input type="date" id="overviewTargetDate" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Estimated Budget</label>
+                  <input type="text" id="overviewBudget" placeholder="e.g. $15,000 / Internal" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">External Partner / Dev Team</label>
+                <input type="text" id="overviewPartners" placeholder="e.g. Acme Agency, freelance React dev" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+              </div>
+
+              <div class="pt-2 flex gap-2">
+                <button id="saveOverviewBtn" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-medium py-2 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md shadow-brand-600/20">
+                  <i class="fa-solid fa-floppy-disk"></i> Save Project Details
+                </button>
+                <button id="deleteActiveProjectBtn" title="Delete current project" class="px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs transition">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Col: Product Vision & Problem / Solution -->
+            <div class="lg:col-span-2 space-y-6">
+              <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                  <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-brand-accent"></i> Product Intent &amp; Core Value Proposition
+                  </h3>
+                  <span class="text-xs text-slate-400">What makes this project special?</span>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">What the project intends to do (Executive Summary)</label>
+                  <textarea id="overviewSummary" rows="3" placeholder="Describe the core objective, how it helps users, and the primary mechanism..." class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition leading-relaxed"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Problem Statement</label>
+                    <textarea id="overviewProblem" rows="3" placeholder="What pain point or friction exists today?" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Key Value Proposition / Secret Sauce</label>
+                    <textarea id="overviewValueProp" rows="3" placeholder="Why will people choose this over alternatives?" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition"></textarea>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Target Audience &amp; Personas</label>
+                  <input type="text" id="overviewAudience" placeholder="e.g. Remote design leads, SaaS startup founders, boutique web agency developers" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition">
+                </div>
+              </div>
+
+              <!-- Quick Launchpad KPIs -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-center">
+                  <span class="text-xs text-slate-400 font-medium">Pipeline Steps</span>
+                  <p id="kpiStepsCount" class="text-xl font-bold text-white mt-0.5">0 / 0</p>
+                </div>
+                <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-center">
+                  <span class="text-xs text-slate-400 font-medium">Competitors Analyzed</span>
+                  <p id="kpiCompetitorCount" class="text-xl font-bold text-brand-accent mt-0.5">0</p>
+                </div>
+                <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-center">
+                  <span class="text-xs text-slate-400 font-medium">Mockups / Assets</span>
+                  <p id="kpiAssetsCount" class="text-xl font-bold text-brand-400 mt-0.5">0</p>
+                </div>
+                <div class="glass-card p-3.5 rounded-xl border border-slate-800 text-center">
+                  <span class="text-xs text-slate-400 font-medium">Project Notes</span>
+                  <p id="kpiNotesCount" class="text-xl font-bold text-indigo-300 mt-0.5">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: STEP-BY-STEP PRODUCTION PIPELINE -->
+        <section id="tab-steps" class="tab-pane hidden space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-brand-400"></i> Production Pipeline &amp; Milestones
+              </h3>
+              <p class="text-xs text-slate-400">Track and advance development phases from initial concept to launch handover.</p>
+            </div>
+            
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button id="addStepBtn" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md shadow-brand-600/20">
+                <i class="fa-solid fa-plus text-xs"></i> Add Production Step
+              </button>
+              <button id="resetTemplateStepsBtn" title="Reset to standard 7-step software workflow" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Apply Template
+              </button>
+            </div>
+          </div>
+
+          <!-- Step Progression Bar summary -->
+          <div class="glass-card p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold">
+                <i class="fa-solid fa-diagram-project"></i>
+              </div>
+              <div>
+                <p class="text-xs text-slate-400 font-medium">Completion Meter</p>
+                <p class="text-sm font-semibold text-white" id="stepCompletionSummary">0 of 0 Steps Finished</p>
+              </div>
+            </div>
+            <div class="flex-1 max-w-xl">
+              <div class="flex justify-between text-xs text-slate-400 mb-1">
+                <span>Phase Progress</span>
+                <span id="stepProgressPctText" class="font-bold text-brand-400">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div id="stepProgressBar" class="bg-gradient-to-r from-brand-600 via-indigo-500 to-brand-accent h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Steps Accordion / Cards List -->
+          <div id="stepsContainer" class="space-y-3">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+        <!-- TAB 3: MARKET BENCHMARK & FEATURE COMPARISON MATRIX -->
+        <section id="tab-competitors" class="tab-pane hidden space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-scale-balanced text-brand-accent"></i> Market Benchmarking &amp; Feature Gap Analysis
+              </h3>
+              <p class="text-xs text-slate-400">Compare existing products against your app to clarify your competitive advantage.</p>
+            </div>
+            <div class="flex gap-2">
+              <button id="addCompetitorBtn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                <i class="fa-solid fa-plus text-xs text-brand-400"></i> Add Competitor
+              </button>
+              <button id="addFeatureRowBtn" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-medium flex items-center gap-2 transition shadow-md shadow-brand-600/20">
+                <i class="fa-solid fa-table-columns text-xs"></i> Add Feature Spec
+              </button>
+            </div>
+          </div>
+
+          <!-- Competitors Cards -->
+          <div>
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Target Competitors on the Market</h4>
+            <div id="competitorsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Feature Matrix Table -->
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+            <div class="p-4 bg-slate-800/50 border-b border-slate-800 flex items-center justify-between">
+              <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-table-cells text-brand-400"></i> Feature Matrix &amp; Differentiation
+              </h4>
+              <span class="text-xs text-slate-400">Define which features you match, beat, or omit</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-800/80 text-slate-400 border-b border-slate-700/80">
+                    <th class="py-3 px-4 font-semibold">Feature / Capability</th>
+                    <th class="py-3 px-4 font-semibold text-slate-300">Competitors Status</th>
+                    <th class="py-3 px-4 font-semibold text-brand-400">My App Priority / Plan</th>
+                    <th class="py-3 px-4 font-semibold">Strategic Impact</th>
+                    <th class="py-3 px-4 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="featuresTableBody" class="divide-y divide-slate-800 text-slate-300">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: CALENDAR & DEADLINES -->
+        <section id="tab-calendar" class="tab-pane hidden space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-regular fa-calendar-check text-brand-400"></i> Production Calendar &amp; Deadlines
+              </h3>
+              <p class="text-xs text-slate-400">Synchronized milestones, step due dates, and sprint targets for <span id="calendarProjectLabel" class="text-slate-200 font-semibold">Project</span>.</p>
+            </div>
+            <button id="addCalendarEventBtn" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition shadow-md shadow-brand-600/20">
+              <i class="fa-solid fa-plus text-xs"></i> Quick Add Milestone
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Monthly Calendar View -->
+            <div class="lg:col-span-2 glass-card rounded-2xl p-4 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h4 id="calendarMonthYear" class="text-base sm:text-lg font-bold text-white">Month Year</h4>
+                <div class="flex items-center space-x-1">
+                  <button id="calPrevMonthBtn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                  </button>
+                  <button id="calTodayBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-brand-400 transition">
+                    Today
+                  </button>
+                  <button id="calNextMonthBtn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Days Header -->
+              <div class="grid grid-cols-7 text-center text-xs font-semibold text-slate-400 py-2 border-b border-slate-800">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <!-- Calendar Day Cells -->
+              <div id="calendarGrid" class="grid grid-cols-7 gap-1 mt-2">
+                <!-- Days generated by JS -->
+              </div>
+            </div>
+
+            <!-- Right: Upcoming Dates & Selected Date Sidebar -->
+            <div class="space-y-4">
+              <div class="glass-card rounded-2xl p-4">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                  <i class="fa-solid fa-flag-checkered text-brand-accent"></i> Key Deadlines &amp; Deliverables
+                </h4>
+                <div id="calendarUpcomingList" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  <!-- Generated via JS -->
+                </div>
+              </div>
+
+              <div class="glass-card rounded-2xl p-4 bg-brand-900/10 border-brand-500/20">
+                <div class="flex items-center gap-2 text-xs font-semibold text-brand-300 mb-1">
+                  <i class="fa-solid fa-lightbulb"></i> Tip
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Click any day on the calendar to log an instant delivery checkpoint or link an external client sync date.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: MOCKUPS & VISUAL ASSETS -->
+        <section id="tab-assets" class="tab-pane hidden space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-regular fa-image text-brand-400"></i> Visual Assets, Wireframes &amp; Sketches
+              </h3>
+              <p class="text-xs text-slate-400">Upload UI concepts, wireframe exports, inspirations, or system architecture diagrams.</p>
+            </div>
+            
+            <label class="cursor-pointer px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition shadow-md shadow-brand-600/20">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Upload Image</span>
+              <input type="file" id="assetFileInput" accept="image/*" class="hidden">
+            </label>
+          </div>
+
+          <!-- Dropzone area -->
+          <div id="dropzone" class="border-2 border-dashed border-slate-700 hover:border-brand-500/60 rounded-2xl p-6 text-center transition cursor-pointer bg-slate-900/40">
+            <i class="fa-regular fa-folder-open text-3xl text-brand-400 mb-2"></i>
+            <p class="text-sm font-semibold text-white">Click or drag &amp; drop an image here</p>
+            <p class="text-xs text-slate-400 mt-1">PNG, JPG, SVG, WebP supported (auto-saved to your project)</p>
+          </div>
+
+          <!-- Asset Grid -->
+          <div id="assetsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- TAB 6: STRUCTURED NOTES & LOGS -->
+        <section id="tab-notes" class="tab-pane hidden space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-regular fa-note-sticky text-brand-400"></i> Project Notes &amp; Meeting Logs
+              </h3>
+              <p class="text-xs text-slate-400">Document developer meetings, technical stack decisions, user feedback, and ideas.</p>
+            </div>
+            <button id="addNoteBtn" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition shadow-md shadow-brand-600/20">
+              <i class="fa-solid fa-plus text-xs"></i> Create Note
+            </button>
+          </div>
+
+          <!-- Search & Filter tags -->
+          <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div class="relative w-full sm:w-80">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+              <input type="text" id="noteSearchInput" placeholder="Search notes by keywords..." class="w-full bg-slate-800/80 border border-slate-700 text-xs rounded-xl pl-8 pr-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+            </div>
+            <div id="noteTagFilters" class="flex flex-wrap gap-1.5 w-full sm:w-auto">
+              <button class="note-filter-tag active px-2.5 py-1 rounded-lg text-xs bg-brand-600 text-white font-medium" data-tag="ALL">All Notes</button>
+              <button class="note-filter-tag px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium" data-tag="Architecture">Architecture</button>
+              <button class="note-filter-tag px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium" data-tag="UI/UX">UI/UX</button>
+              <button class="note-filter-tag px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium" data-tag="Dev Sync">Dev Sync</button>
+              <button class="note-filter-tag px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium" data-tag="Ideation">Ideation</button>
+            </div>
+          </div>
+
+          <!-- Notes Container -->
+          <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Notes rendered here -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT PRODUCTION STEP -->
+  <div id="stepModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+    <div class="bg-surface-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h4 id="stepModalTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-brand-400"></i> <span>Add Production Step</span>
+        </h4>
+        <button class="close-modal text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="modalStepId">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Step Name / Milestone Title</label>
+          <input type="text" id="modalStepTitle" placeholder="e.g. 4. Interactive Wireframing & Design System" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Status</label>
+            <select id="modalStepStatus" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+              <option value="Not Started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="In Review">In Review</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Target Due Date</label>
+            <input type="date" id="modalStepDueDate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Objective &amp; Deliverables Checklist (one per line)</label>
+          <textarea id="modalStepChecklist" rows="3" placeholder="Define moodboard&#10;Create responsive Figma components&#10;Design token export" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Responsible Party / Dev Role</label>
+          <input type="text" id="modalStepAssignee" placeholder="e.g. Senior Frontend Dev / External UI Studio" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+        </div>
+      </div>
+      <div class="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-2">
+        <button class="close-modal px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button id="saveStepModalBtn" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition">Save Step</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT COMPETITOR -->
+  <div id="competitorModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+    <div class="bg-surface-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h4 id="competitorModalTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-brand-accent"></i> <span>Add Competitor</span>
+        </h4>
+        <button class="close-modal text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="modalCompetitorId">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Competitor / Product Name</label>
+          <input type="text" id="modalCompName" placeholder="e.g. Linear, ClickUp, Notion" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Product URL or Website</label>
+          <input type="text" id="modalCompUrl" placeholder="https://example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">What They Do Well (Pros)</label>
+            <textarea id="modalCompPros" rows="2" placeholder="Great UI, fast keyboard shortcuts" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Where They Fall Short (Cons)</label>
+            <textarea id="modalCompCons" rows="2" placeholder="Steep learning curve, expensive tier" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Pricing Model</label>
+          <input type="text" id="modalCompPricing" placeholder="e.g. $12/user/mo, Freemium, Open-source" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+        </div>
+      </div>
+      <div class="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-2">
+        <button class="close-modal px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button id="saveCompetitorModalBtn" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition">Save Competitor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT FEATURE MATRIX ROW -->
+  <div id="featureModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+    <div class="bg-surface-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h4 id="featureModalTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-brand-400"></i> <span>Add Feature Specification</span>
+        </h4>
+        <button class="close-modal text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="modalFeatureId">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Feature Name / Capability</label>
+          <input type="text" id="modalFeatureName" placeholder="e.g. Offline-first local sync" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">How Competitors Handle It</label>
+          <input type="text" id="modalFeatureCompetitorState" placeholder="e.g. Cloud only; requires enterprise plan" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Our Plan / Priority</label>
+            <select id="modalFeaturePriority" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+              <option value="Must Have (Core MVP)">Must Have (Core MVP)</option>
+              <option value="Unique Differentiator">Unique Differentiator</option>
+              <option value="Nice to Have (v2)">Nice to Have (v2)</option>
+              <option value="Intentionally Excluded">Intentionally Excluded</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Strategic Advantage</label>
+            <input type="text" id="modalFeatureAdvantage" placeholder="e.g. 10x faster workflow" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-2">
+        <button class="close-modal px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button id="saveFeatureModalBtn" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition">Save Feature</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT NOTE -->
+  <div id="noteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+    <div class="bg-surface-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h4 id="noteModalTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-regular fa-note-sticky text-brand-400"></i> <span>Add Project Note</span>
+        </h4>
+        <button class="close-modal text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="modalNoteId">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Note Title</label>
+          <input type="text" id="modalNoteTitle" placeholder="e.g. Developer sync: REST vs GraphQL decision" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Category Tag</label>
+            <select id="modalNoteCategory" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+              <option value="Architecture">Architecture</option>
+              <option value="UI/UX">UI/UX</option>
+              <option value="Dev Sync">Dev Sync</option>
+              <option value="Ideation">Ideation</option>
+              <option value="Client Feedback">Client Feedback</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Date</label>
+            <input type="date" id="modalNoteDate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Details &amp; Key Decisions</label>
+          <textarea id="modalNoteContent" rows="5" placeholder="Record technical constraints, agreed milestones, or design rationale..." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-2">
+        <button class="close-modal px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button id="saveNoteModalBtn" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMAGE PREVIEW -->
+  <div id="imageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+    <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+      <button id="closeImageModalBtn" class="absolute -top-10 right-0 text-white hover:text-brand-400 transition text-2xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <img id="imageModalPreview" src="" alt="Mockup Preview" class="max-h-[75vh] w-auto rounded-xl object-contain shadow-2xl border border-slate-700">
+      <div class="mt-3 text-center">
+        <p id="imageModalCaption" class="text-sm font-semibold text-white"></p>
+        <p id="imageModalDate" class="text-xs text-slate-400"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NEW PROJECT CREATOR -->
+  <div id="newProjectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+    <div class="bg-surface-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h4 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-folder-plus text-brand-400"></i> <span>Initiate New Project</span>
+        </h4>
+        <button class="close-modal text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Project Name</label>
+          <input type="text" id="newProjectNameInput" placeholder="e.g. Project 3: Client Booking Engine" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Target Platform</label>
+          <select id="newProjectPlatformInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+            <option value="Responsive Web App">Responsive Web App</option>
+            <option value="Mobile App (iOS/Android)">Mobile App (iOS/Android)</option>
+            <option value="Marketing Website / Portal">Marketing Website / Portal</option>
+            <option value="Desktop Software">Desktop Software</option>
+            <option value="API / Micro-SaaS Platform">API / Micro-SaaS Platform</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Initial Idea / Objective</label>
+          <textarea id="newProjectDescInput" rows="3" placeholder="Briefly describe what this software or website will do..." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-slate-850 border-t border-slate-800 flex justify-end gap-2">
+        <button class="close-modal px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button id="confirmCreateProjectBtn" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT ONLY BRIEF CONTAINER -->
+  <div id="printContainer" class="print-only hidden p-8 bg-white text-slate-900 font-sans">
+    <!-- Populated immediately prior to window.print() -->
+  </div>
+
+  <script>
+    /* ==========================================================================
+       DESIGN FLOW PRODUCTION PLANNER - CORE CONTROLLER
+       ========================================================================== */
+
+    const STORAGE_KEY = 'design_flow_production_planner_v1';
+
+    // Default Seed Data
+    const DEFAULT_DATA = {
+      activeProjectId: 'proj-1',
+      projects: [
+        {
+          id: 'proj-1',
+          name: 'Project 1: BizToolHub SaaS',
+          platform: 'Responsive Web App',
+          status: 'In Planning',
+          targetDate: '2026-11-20',
+          budget: '$25,000',
+          partners: 'External Agency (CodeCraft) + Lead Designer',
+          summary: 'A unified operations platform for boutique design & development agencies to track client scope, billable milestones, and feature drift in real-time.',
+          problem: 'Creative agencies struggle with scope creep, losing up to 20% in profit margins because change orders are lost in Slack chats.',
+          valueProp: 'Visual client approval workflow with instantaneous change-order budgeting and live production timelines.',
+          audience: 'Creative directors, agency account executives, and freelance technical product managers.',
+          steps: [
+            {
+              id: 'step-101',
+              title: '1. Concept & Problem Definition',
+              status: 'Completed',
+              dueDate: '2026-10-08',
+              assignee: 'Product Lead',
+              checklist: ['Conduct 5 user discovery interviews', 'Map high-level customer journey', 'Define primary success metrics']
+            },
+            {
+              id: 'step-102',
+              title: '2. Market Research & Feature Gap Matrix',
+              status: 'Completed',
+              dueDate: '2026-10-15',
+              assignee: 'Strategy Team',
+              checklist: ['Audit 3 top market competitors', 'Identify pricing vulnerabilities', 'Draft initial feature diff sheet']
+            },
+            {
+              id: 'step-103',
+              title: '3. Technical Architecture & Tech Stack Selection',
+              status: 'In Progress',
+              dueDate: '2026-10-24',
+              assignee: 'External Dev Partner',
+              checklist: ['Evaluate Postgres + Supabase vs Firebase', 'Design data schema for project revisions', 'Validate client-side export performance']
+            },
+            {
+              id: 'step-104',
+              title: '4. UI Mockups, Wireframes & Prototype',
+              status: 'In Progress',
+              dueDate: '2026-11-02',
+              assignee: 'UI/UX Designer',
+              checklist: ['Create high-fidelity dark-mode UI kit', 'Design responsive mobile layouts', 'Run clickable Figma testing session']
+            },
+            {
+              id: 'step-105',
+              title: '5. Core Sprints & Front-end Integration',
+              status: 'Not Started',
+              dueDate: '2026-11-12',
+              assignee: 'Dev Team',
+              checklist: ['Frontend dashboard skeleton', 'State management & local caching', 'Integration of export brief engine']
+            },
+            {
+              id: 'step-106',
+              title: '6. QA, Security Audit & User Acceptance',
+              status: 'Not Started',
+              dueDate: '2026-11-17',
+              assignee: 'QA Lead',
+              checklist: ['Cross-browser test (Safari, Chrome, Firefox)', 'Accessibility audit', 'Load test large dataset imports']
+            },
+            {
+              id: 'step-107',
+              title: '7. Production Deployment & Client Handover',
+              status: 'Not Started',
+              dueDate: '2026-11-20',
+              assignee: 'DevOps / Lead',
+              checklist: ['Domain DNS configuration', 'Production analytics setup', 'Client documentation and video walkthrough']
+            }
+          ],
+          competitors: [
+            {
+              id: 'comp-1',
+              name: 'Monday.com Dev',
+              url: 'https://monday.com',
+              pros: 'Very colorful, extensive 3rd-party integrations, strong enterprise trust.',
+              cons: 'Extremely cluttered interface, expensive per-seat pricing, slow mobile web load.',
+              pricing: '$16/seat/month'
+            },
+            {
+              id: 'comp-2',
+              name: 'Linear.app',
+              url: 'https://linear.app',
+              pros: 'Blazing fast keyboard shortcuts, minimalist aesthetics, developer-loved.',
+              cons: 'Lacks direct visual client markup and external stakeholder friendly briefings.',
+              pricing: 'Free to $10/user'
+            }
+          ],
+          features: [
+            {
+              id: 'feat-1',
+              name: 'Client-Friendly Visual Brief Export',
+              competitorState: 'Export to basic CSV only; requires raw PDF add-on',
+              priority: 'Unique Differentiator',
+              advantage: 'Saves 3 hours per week preparing status PDFs'
+            },
+            {
+              id: 'feat-2',
+              name: 'Real-Time Feature Gap Comparison Table',
+              competitorState: 'Manual wiki tables or separate Notion doc',
+              priority: 'Must Have (Core MVP)',
+              advantage: 'Direct visibility on scope divergence'
+            },
+            {
+              id: 'feat-3',
+              name: 'Offline-First Local Storage Engine',
+              competitorState: 'Strict cloud login with slow offline sync',
+              priority: 'Unique Differentiator',
+              advantage: 'Instant performance without mandatory account setup'
+            }
+          ],
+          assets: [
+            {
+              id: 'ast-1',
+              name: 'Agency Dashboard Wireframe Concept',
+              caption: 'Early exploration of 3-column workflow layout',
+              tag: 'Wireframe',
+              date: '2026-10-02',
+              url: 'https://placehold.co/800x480/1e293b/818cf8?text=Interactive+Wireframe+Spec'
+            }
+          ],
+          notes: [
+            {
+              id: 'note-1',
+              title: 'Developer Sync: Backend vs Serverless Strategy',
+              category: 'Dev Sync',
+              date: '2026-10-03',
+              content: 'Discussed project with external agency engineers. Agreed to use modern client-side state with optional REST/JSON sync rather than heavy custom servers for MVP.'
+            },
+            {
+              id: 'note-2',
+              title: 'Design Decision: High-Contrast Slate Palette',
+              category: 'UI/UX',
+              date: '2026-10-01',
+              content: 'Selected deep slate #080d1a with vivid indigo highlights to keep focus on milestones and deliverables.'
+            }
+          ],
+          calendarMilestones: [
+            { id: 'cal-1', title: 'Sprint 1 Architecture Sign-off', date: '2026-10-14', type: 'Milestone' },
+            { id: 'cal-2', title: 'Client Prototype Review', date: '2026-10-28', type: 'Review' }
+          ]
+        },
+        {
+          id: 'proj-2',
+          name: 'Project 2: Mobile Inventory Scanner',
+          platform: 'Mobile App (iOS/Android)',
+          status: 'Ideation',
+          targetDate: '2026-12-15',
+          budget: '$12,000',
+          partners: 'Freelance Flutter Engineer',
+          summary: 'A fast barcode/QR inventory scanning utility for retail warehouse staff with instant offline sync.',
+          problem: 'Warehouse personnel waste 15 minutes each shift manually typing SKU numbers.',
+          valueProp: 'Instant camera-based barcode scanning with live inventory subtraction.',
+          audience: 'Warehouse supervisors and distribution clerks.',
+          steps: [],
+          competitors: [],
+          features: [],
+          assets: [],
+          notes: [],
+          calendarMilestones: []
+        }
+      ]
+    };
+
+    class ProductionPlannerApp {
+      constructor() {
+        this.data = this.loadData();
+        this.currentDate = new Date(); // Defaults to 2026 runtime
+        this.activeFilterNoteTag = 'ALL';
+        this.initDOMElements();
+        this.attachEventListeners();
+        this.renderAll();
+      }
+
+      loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+              return parsed;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse localStorage data, restoring sample project.', e);
+        }
+        return JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+
+      saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+        } catch (e) {
+          this.showToast('Storage quota exceeded. Consider optimizing uploaded images.', 'error');
+        }
+      }
+
+      getActiveProject() {
+        let proj = this.data.projects.find(p => p.id === this.data.activeProjectId);
+        if (!proj && this.data.projects.length > 0) {
+          proj = this.data.projects[0];
+          this.data.activeProjectId = proj.id;
+        }
+        return proj;
+      }
+
+      initDOMElements() {
+        // Navigation & tabs
+        this.navTabs = document.querySelectorAll('.nav-tab');
+        this.tabPanes = document.querySelectorAll('.tab-pane');
+        this.headerProjectSelect = document.getElementById('headerProjectSelect');
+        this.activeProjectTitle = document.getElementById('activeProjectTitle');
+        this.activeProjectBadge = document.getElementById('activeProjectBadge');
+        this.activeProjectSubheader = document.getElementById('activeProjectSubheader');
+        this.headerProgressPct = document.getElementById('headerProgressPct');
+        this.headerProgressBar = document.getElementById('headerProgressBar');
+        this.projectStatusIndicator = document.getElementById('projectStatusIndicator');
+
+        // Sidebar
+        this.sidebar = document.getElementById('sidebar');
+        this.sidebarOverlay = document.getElementById('sidebarOverlay');
+        this.mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        this.projectsList = document.getElementById('projectsList');
+        this.activeProjectsCount = document.getElementById('activeProjectsCount');
+        this.projectSearchInput = document.getElementById('projectSearchInput');
+
+        // Overview Tab Inputs
+        this.overviewProjectName = document.getElementById('overviewProjectName');
+        this.overviewPlatform = document.getElementById('overviewPlatform');
+        this.overviewStatus = document.getElementById('overviewStatus');
+        this.overviewTargetDate = document.getElementById('overviewTargetDate');
+        this.overviewBudget = document.getElementById('overviewBudget');
+        this.overviewPartners = document.getElementById('overviewPartners');
+        this.overviewSummary = document.getElementById('overviewSummary');
+        this.overviewProblem = document.getElementById('overviewProblem');
+        this.overviewValueProp = document.getElementById('overviewValueProp');
+        this.overviewAudience = document.getElementById('overviewAudience');
+        this.projectUidDisplay = document.getElementById('projectUidDisplay');
+
+        // Buttons
+        this.saveOverviewBtn = document.getElementById('saveOverviewBtn');
+        this.deleteActiveProjectBtn = document.getElementById('deleteActiveProjectBtn');
+        this.quickAddProjectBtn = document.getElementById('quickAddProjectBtn');
+        this.newProjectSidebarBtn = document.getElementById('newProjectSidebarBtn');
+        this.exportBriefBtn = document.getElementById('exportBriefBtn');
+        this.backupAllBtn = document.getElementById('backupAllBtn');
+
+        // Steps
+        this.stepsContainer = document.getElementById('stepsContainer');
+        this.addStepBtn = document.getElementById('addStepBtn');
+        this.resetTemplateStepsBtn = document.getElementById('resetTemplateStepsBtn');
+        this.stepProgressBar = document.getElementById('stepProgressBar');
+        this.stepProgressPctText = document.getElementById('stepProgressPctText');
+        this.stepCompletionSummary = document.getElementById('stepCompletionSummary');
+
+        // Competitor & Feature Matrix
+        this.competitorsGrid = document.getElementById('competitorsGrid');
+        this.featuresTableBody = document.getElementById('featuresTableBody');
+        this.addCompetitorBtn = document.getElementById('addCompetitorBtn');
+        this.addFeatureRowBtn = document.getElementById('addFeatureRowBtn');
+
+        // Calendar
+        this.calendarGrid = document.getElementById('calendarGrid');
+        this.calendarMonthYear = document.getElementById('calendarMonthYear');
+        this.calPrevMonthBtn = document.getElementById('calPrevMonthBtn');
+        this.calNextMonthBtn = document.getElementById('calNextMonthBtn');
+        this.calTodayBtn = document.getElementById('calTodayBtn');
+        this.calendarUpcomingList = document.getElementById('calendarUpcomingList');
+        this.calendarProjectLabel = document.getElementById('calendarProjectLabel');
+        this.addCalendarEventBtn = document.getElementById('addCalendarEventBtn');
+
+        // Assets
+        this.assetsGrid = document.getElementById('assetsGrid');
+        this.assetFileInput = document.getElementById('assetFileInput');
+        this.dropzone = document.getElementById('dropzone');
+
+        // Notes
+        this.notesContainer = document.getElementById('notesContainer');
+        this.addNoteBtn = document.getElementById('addNoteBtn');
+        this.noteSearchInput = document.getElementById('noteSearchInput');
+        this.noteTagButtons = document.querySelectorAll('.note-filter-tag');
+
+        // Modals
+        this.stepModal = document.getElementById('stepModal');
+        this.competitorModal = document.getElementById('competitorModal');
+        this.featureModal = document.getElementById('featureModal');
+        this.noteModal = document.getElementById('noteModal');
+        this.newProjectModal = document.getElementById('newProjectModal');
+        this.imageModal = document.getElementById('imageModal');
+        this.imageModalPreview = document.getElementById('imageModalPreview');
+        this.imageModalCaption = document.getElementById('imageModalCaption');
+        this.imageModalDate = document.getElementById('imageModalDate');
+      }
+
+      attachEventListeners() {
+        // Tab switching
+        this.navTabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            this.switchTab(tab.getAttribute('data-tab'));
+          });
+        });
+
+        // Mobile drawer toggle
+        this.mobileMenuBtn.addEventListener('click', () => this.toggleMobileSidebar(true));
+        this.sidebarOverlay.addEventListener('click', () => this.toggleMobileSidebar(false));
+
+        // Project selection
+        this.headerProjectSelect.addEventListener('change', (e) => {
+          this.switchProject(e.target.value);
+        });
+
+        // Search in sidebar
+        this.projectSearchInput.addEventListener('input', () => this.renderSidebarProjects());
+
+        // Quick add project modal
+        const openNewProjModal = () => {
+          document.getElementById('newProjectNameInput').value = `Project ${this.data.projects.length + 1}: `;
+          document.getElementById('newProjectDescInput').value = '';
+          this.openModal(this.newProjectModal);
+        };
+        this.quickAddProjectBtn.addEventListener('click', openNewProjModal);
+        this.newProjectSidebarBtn.addEventListener('click', openNewProjModal);
+
+        document.getElementById('confirmCreateProjectBtn').addEventListener('click', () => {
+          this.handleCreateProject();
+        });
+
+        // Save Overview form
+        this.saveOverviewBtn.addEventListener('click', () => this.saveProjectOverview());
+        this.deleteActiveProjectBtn.addEventListener('click', () => this.deleteCurrentProject());
+
+        // Step Actions
+        this.addStepBtn.addEventListener('click', () => this.openStepModal());
+        this.resetTemplateStepsBtn.addEventListener('click', () => this.applyDefaultWorkflowTemplate());
+        document.getElementById('saveStepModalBtn').addEventListener('click', () => this.handleSaveStep());
+
+        // Competitor & Feature Matrix
+        this.addCompetitorBtn.addEventListener('click', () => this.openCompetitorModal());
+        document.getElementById('saveCompetitorModalBtn').addEventListener('click', () => this.handleSaveCompetitor());
+
+        this.addFeatureRowBtn.addEventListener('click', () => this.openFeatureModal());
+        document.getElementById('saveFeatureModalBtn').addEventListener('click', () => this.handleSaveFeature());
+
+        // Calendar Controls
+        this.calPrevMonthBtn.addEventListener('click', () => {
+          this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+          this.renderCalendar();
+        });
+        this.calNextMonthBtn.addEventListener('click', () => {
+          this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+          this.renderCalendar();
+        });
+        this.calTodayBtn.addEventListener('click', () => {
+          this.currentDate = new Date();
+          this.renderCalendar();
+        });
+        this.addCalendarEventBtn.addEventListener('click', () => this.handleQuickAddMilestone());
+
+        // Asset Upload
+        this.assetFileInput.addEventListener('change', (e) => this.handleFileUpload(e.target.files[0]));
+        this.dropzone.addEventListener('click', () => this.assetFileInput.click());
+        this.dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          this.dropzone.classList.add('border-brand-500', 'bg-brand-500/10');
+        });
+        this.dropzone.addEventListener('dragleave', () => {
+          this.dropzone.classList.remove('border-brand-500', 'bg-brand-500/10');
+        });
+        this.dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          this.dropzone.classList.remove('border-brand-500', 'bg-brand-500/10');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            this.handleFileUpload(e.dataTransfer.files[0]);
+          }
+        });
+
+        // Notes
+        this.addNoteBtn.addEventListener('click', () => this.openNoteModal());
+        document.getElementById('saveNoteModalBtn').addEventListener('click', () => this.handleSaveNote());
+        this.noteSearchInput.addEventListener('input', () => this.renderNotes());
+        this.noteTagButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            this.noteTagButtons.forEach(b => b.classList.remove('bg-brand-600', 'text-white'));
+            this.noteTagButtons.forEach(b => b.classList.add('bg-slate-800', 'text-slate-300'));
+            btn.classList.remove('bg-slate-800', 'text-slate-300');
+            btn.classList.add('bg-brand-600', 'text-white');
+            this.activeFilterNoteTag = btn.getAttribute('data-tag');
+            this.renderNotes();
+          });
+        });
+
+        // Generic Modal Closers
+        document.querySelectorAll('.close-modal').forEach(btn => {
+          btn.addEventListener('click', () => this.closeAllModals());
+        });
+        document.getElementById('closeImageModalBtn').addEventListener('click', () => {
+          this.imageModal.classList.add('hidden');
+        });
+
+        // Export & Backup
+        this.exportBriefBtn.addEventListener('click', () => this.exportProjectBrief());
+        this.backupAllBtn.addEventListener('click', () => this.downloadFullBackup());
+      }
+
+      switchTab(tabId) {
+        this.navTabs.forEach(tab => {
+          const isTarget = tab.getAttribute('data-tab') === tabId;
+          tab.classList.toggle('text-brand-400', isTarget);
+          tab.classList.toggle('border-b-2', isTarget);
+          tab.classList.toggle('border-brand-500', isTarget);
+          tab.classList.toggle('bg-slate-800/40', isTarget);
+          tab.classList.toggle('text-slate-400', !isTarget);
+          tab.classList.toggle('border-transparent', !isTarget);
+        });
+
+        this.tabPanes.forEach(pane => {
+          if (pane.id === tabId) {
+            pane.classList.remove('hidden');
+          } else {
+            pane.classList.add('hidden');
+          }
+        });
+
+        // If calendar opened, refresh view
+        if (tabId === 'tab-calendar') {
+          this.renderCalendar();
+        }
+      }
+
+      toggleMobileSidebar(show) {
+        if (show) {
+          this.sidebar.classList.remove('-translate-x-full');
+          this.sidebarOverlay.classList.remove('hidden');
+        } else {
+          this.sidebar.classList.add('-translate-x-full');
+          this.sidebarOverlay.classList.add('hidden');
+        }
+      }
+
+      openModal(modalElem) {
+        modalElem.classList.remove('hidden');
+      }
+
+      closeAllModals() {
+        [this.stepModal, this.competitorModal, this.featureModal, this.noteModal, this.newProjectModal, this.imageModal].forEach(m => {
+          if (m) m.classList.add('hidden');
+        });
+      }
+
+      showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const icon = type === 'error' ? 'fa-triangle-exclamation text-red-400' : 'fa-circle-check text-brand-accent';
+        toast.className = 'pointer-events-auto flex items-center space-x-2.5 bg-slate-900 border border-slate-700 text-white text-xs px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0';
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-x-4');
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      }
+
+      renderAll() {
+        this.renderHeaderProjectSelector();
+        this.renderSidebarProjects();
+        this.renderOverviewTab();
+        this.renderSteps();
+        this.renderCompetitorsAndFeatures();
+        this.renderCalendar();
+        this.renderAssets();
+        this.renderNotes();
+        this.updateGlobalProgress();
+      }
+
+      switchProject(projectId) {
+        this.data.activeProjectId = projectId;
+        this.saveData();
+        this.renderAll();
+        this.toggleMobileSidebar(false);
+        this.showToast(`Switched to ${this.getActiveProject().name}`);
+      }
+
+      renderHeaderProjectSelector() {
+        this.headerProjectSelect.innerHTML = '';
+        this.data.projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name;
+          if (p.id === this.data.activeProjectId) {
+            opt.selected = true;
+          }
+          this.headerProjectSelect.appendChild(opt);
+        });
+      }
+
+      renderSidebarProjects() {
+        const query = (this.projectSearchInput.value || '').toLowerCase();
+        this.projectsList.innerHTML = '';
+        
+        const filtered = this.data.projects.filter(p => p.name.toLowerCase().includes(query) || (p.summary || '').toLowerCase().includes(query));
+        this.activeProjectsCount.textContent = `${this.data.projects.length} Total Projects`;
+
+        if (filtered.length === 0) {
+          this.projectsList.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">No projects match "${query}"</div>`;
+          return;
+        }
+
+        filtered.forEach(p => {
+          const isActive = p.id === this.data.activeProjectId;
+          const pct = this.calculateProjectProgress(p);
+          
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-xl cursor-pointer border transition-all ${
+            isActive
+              ? 'bg-brand-600/10 border-brand-500/50 shadow-md shadow-brand-500/10'
+              : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800/80 hover:border-slate-700'
+          }`;
+
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-1 mb-1">
+              <span class="text-xs font-bold text-white truncate max-w-[170px]">${p.name}</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                p.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                p.status === 'In Development' ? 'bg-cyan-500/20 text-cyan-300' :
+                'bg-slate-700 text-slate-300'
+              }">${p.status || 'Ideation'}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 line-clamp-1 mb-2">${p.summary || 'No description yet.'}</div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+              <span>Progress</span>
+              <span class="font-bold text-brand-400">${pct}%</span>
+            </div>
+            <div class="w-full bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-gradient-to-r from-brand-500 to-brand-accent h-1.5 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            this.switchProject(p.id);
+          });
+
+          this.projectsList.appendChild(card);
+        });
+      }
+
+      calculateProjectProgress(project) {
+        if (!project.steps || project.steps.length === 0) return 0;
+        const completed = project.steps.filter(s => s.status === 'Completed').length;
+        return Math.round((completed / project.steps.length) * 100);
+      }
+
+      updateGlobalProgress() {
+        const active = this.getActiveProject();
+        if (!active) return;
+
+        const pct = this.calculateProjectProgress(active);
+        this.headerProgressPct.textContent = `${pct}%`;
+        this.headerProgressBar.style.width = `${pct}%`;
+
+        this.activeProjectTitle.textContent = active.name;
+        this.activeProjectBadge.textContent = active.status || 'In Planning';
+        this.activeProjectSubheader.textContent = `Target: ${active.targetDate || 'TBD'} • ${active.platform || 'Web/Mobile'}`;
+        this.calendarProjectLabel.textContent = active.name;
+
+        // Status indicator dot
+        if (active.status === 'Completed') {
+          this.projectStatusIndicator.className = 'w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20';
+        } else if (active.status === 'In Development') {
+          this.projectStatusIndicator.className = 'w-3.5 h-3.5 rounded-full bg-cyan-400 ring-4 ring-cyan-400/20';
+        } else {
+          this.projectStatusIndicator.className = 'w-3.5 h-3.5 rounded-full bg-brand-500 ring-4 ring-brand-500/20';
+        }
+
+        // KPIs
+        const stepsDone = (active.steps || []).filter(s => s.status === 'Completed').length;
+        document.getElementById('kpiStepsCount').textContent = `${stepsDone} / ${(active.steps || []).length}`;
+        document.getElementById('kpiCompetitorCount').textContent = (active.competitors || []).length;
+        document.getElementById('kpiAssetsCount').textContent = (active.assets || []).length;
+        document.getElementById('kpiNotesCount').textContent = (active.notes || []).length;
+      }
+
+      renderOverviewTab() {
+        const p = this.getActiveProject();
+        if (!p) return;
+
+        this.projectUidDisplay.textContent = `UID: #${p.id}`;
+        this.overviewProjectName.value = p.name || '';
+        this.overviewPlatform.value = p.platform || 'Responsive Web App';
+        this.overviewStatus.value = p.status || 'In Planning';
+        this.overviewTargetDate.value = p.targetDate || '';
+        this.overviewBudget.value = p.budget || '';
+        this.overviewPartners.value = p.partners || '';
+        this.overviewSummary.value = p.summary || '';
+        this.overviewProblem.value = p.problem || '';
+        this.overviewValueProp.value = p.valueProp || '';
+        this.overviewAudience.value = p.audience || '';
+      }
+
+      saveProjectOverview() {
+        const p = this.getActiveProject();
+        if (!p) return;
+
+        p.name = this.overviewProjectName.value.trim() || 'Untitled Project';
+        p.platform = this.overviewPlatform.value;
+        p.status = this.overviewStatus.value;
+        p.targetDate = this.overviewTargetDate.value;
+        p.budget = this.overviewBudget.value.trim();
+        p.partners = this.overviewPartners.value.trim();
+        p.summary = this.overviewSummary.value.trim();
+        p.problem = this.overviewProblem.value.trim();
+        p.valueProp = this.overviewValueProp.value.trim();
+        p.audience = this.overviewAudience.value.trim();
+
+        this.saveData();
+        this.renderAll();
+        this.showToast('Project scope and essentials saved!');
+      }
+
+      handleCreateProject() {
+        const nameInput = document.getElementById('newProjectNameInput').value.trim();
+        const platform = document.getElementById('newProjectPlatformInput').value;
+        const summary = document.getElementById('newProjectDescInput').value.trim();
+
+        if (!nameInput) {
+          this.showToast('Please provide a project name', 'error');
+          return;
+        }
+
+        const newId = 'proj-' + Date.now();
+        const newProject = {
+          id: newId,
+          name: nameInput,
+          platform: platform,
+          status: 'Ideation',
+          targetDate: '',
+          budget: '',
+          partners: '',
+          summary: summary || 'No description provided.',
+          problem: '',
+          valueProp: '',
+          audience: '',
+          steps: [],
+          competitors: [],
+          features: [],
+          assets: [],
+          notes: [],
+          calendarMilestones: []
+        };
+
+        this.data.projects.push(newProject);
+        this.data.activeProjectId = newId;
+        this.saveData();
+        this.closeAllModals();
+        this.renderAll();
+        this.showToast(`Created "${nameInput}"`);
+      }
+
+      deleteCurrentProject() {
+        if (this.data.projects.length <= 1) {
+          this.showToast('You must keep at least one project in your planner.', 'error');
+          return;
+        }
+        const active = this.getActiveProject();
+        const confirmDelete = window.confirm(`Are you sure you want to delete "${active.name}"? This cannot be undone.`);
+        if (!confirmDelete) return;
+
+        this.data.projects = this.data.projects.filter(p => p.id !== active.id);
+        this.data.activeProjectId = this.data.projects[0].id;
+        this.saveData();
+        this.renderAll();
+        this.showToast('Project removed successfully.');
+      }
+
+      renderSteps() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        p.steps = p.steps || [];
+
+        const total = p.steps.length;
+        const completed = p.steps.filter(s => s.status === 'Completed').length;
+        const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+        this.stepProgressBar.style.width = `${pct}%`;
+        this.stepProgressPctText.textContent = `${pct}%`;
+        this.stepCompletionSummary.textContent = `${completed} of ${total} Steps Finished`;
+
+        this.stepsContainer.innerHTML = '';
+        if (total === 0) {
+          this.stepsContainer.innerHTML = `
+            <div class="glass-card rounded-2xl p-8 text-center space-y-3">
+              <i class="fa-solid fa-list-ol text-4xl text-slate-600"></i>
+              <p class="text-sm text-slate-300 font-medium">No production steps configured yet.</p>
+              <p class="text-xs text-slate-500">Apply the standard 7-step software workflow template or add individual custom milestones.</p>
+              <button onclick="app.applyDefaultWorkflowTemplate()" class="mt-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold">
+                Apply 7-Step Template
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        p.steps.forEach((step, idx) => {
+          const card = document.createElement('div');
+          const isDone = step.status === 'Completed';
+          const isInProgress = step.status === 'In Progress';
+          
+          card.className = `glass-card rounded-2xl p-4 sm:p-5 border transition-all ${
+            isDone ? 'border-emerald-500/30 bg-emerald-950/10' :
+            isInProgress ? 'border-brand-500/40 bg-brand-950/10' :
+            'border-slate-800'
+          }`;
+
+          const checklistHtml = (step.checklist || []).map((item, i) => `
+            <li class="flex items-center text-xs text-slate-300 gap-2">
+              <i class="fa-regular fa-circle-check text-[11px] ${isDone ? 'text-emerald-400' : 'text-slate-500'}"></i>
+              <span>${item}</span>
+            </li>
+          `).join('');
+
+          card.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <button onclick="app.toggleStepStatus('${step.id}')" title="Click to toggle completed" class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition ${
+                  isDone ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-600 text-transparent hover:border-brand-400'
+                }">
+                  <i class="fa-solid fa-check text-xs"></i>
+                </button>
+                <div>
+                  <h4 class="text-sm sm:text-base font-bold text-white ${isDone ? 'line-through text-slate-400' : ''}">${step.title}</h4>
+                  <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-400">
+                    <span class="px-2 py-0.5 rounded-md font-medium text-[10px] ${
+                      step.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-300' :
+                      step.status === 'In Progress' ? 'bg-indigo-500/20 text-indigo-300' :
+                      step.status === 'In Review' ? 'bg-amber-500/20 text-amber-300' :
+                      'bg-slate-700 text-slate-400'
+                    }">${step.status}</span>
+                    <span>&bull; Due: ${step.dueDate || 'No date set'}</span>
+                    <span>&bull; Role: ${step.assignee || 'Unassigned'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Controls -->
+              <div class="flex items-center space-x-2 self-end md:self-center">
+                <button onclick="app.editStep('${step.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="app.deleteStep('${step.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 text-xs transition">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            ${(step.checklist && step.checklist.length > 0) ? `
+              <div class="mt-3.5 pt-3 border-t border-slate-800/80">
+                <ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  ${checklistHtml}
+                </ul>
+              </div>
+            ` : ''}
+          `;
+
+          this.stepsContainer.appendChild(card);
+        });
+      }
+
+      toggleStepStatus(stepId) {
+        const p = this.getActiveProject();
+        const step = p.steps.find(s => s.id === stepId);
+        if (!step) return;
+
+        if (step.status === 'Completed') {
+          step.status = 'In Progress';
+        } else {
+          step.status = 'Completed';
+        }
+        this.saveData();
+        this.renderSteps();
+        this.updateGlobalProgress();
+        this.renderSidebarProjects();
+      }
+
+      openStepModal(existingStep = null) {
+        document.getElementById('modalStepId').value = existingStep ? existingStep.id : '';
+        document.getElementById('modalStepTitle').value = existingStep ? existingStep.title : '';
+        document.getElementById('modalStepStatus').value = existingStep ? existingStep.status : 'Not Started';
+        document.getElementById('modalStepDueDate').value = existingStep ? existingStep.dueDate : '';
+        document.getElementById('modalStepChecklist').value = existingStep ? (existingStep.checklist || []).join('\n') : '';
+        document.getElementById('modalStepAssignee').value = existingStep ? (existingStep.assignee || '') : '';
+        document.getElementById('stepModalTitle').querySelector('span').textContent = existingStep ? 'Edit Production Step' : 'Add Production Step';
+        this.openModal(this.stepModal);
+      }
+
+      handleSaveStep() {
+        const id = document.getElementById('modalStepId').value;
+        const title = document.getElementById('modalStepTitle').value.trim();
+        const status = document.getElementById('modalStepStatus').value;
+        const dueDate = document.getElementById('modalStepDueDate').value;
+        const checklistRaw = document.getElementById('modalStepChecklist').value;
+        const assignee = document.getElementById('modalStepAssignee').value.trim();
+
+        if (!title) {
+          this.showToast('Please enter a step title', 'error');
+          return;
+        }
+
+        const checklist = checklistRaw.split('\n').map(s => s.trim()).filter(Boolean);
+        const p = this.getActiveProject();
+
+        if (id) {
+          const step = p.steps.find(s => s.id === id);
+          if (step) {
+            step.title = title;
+            step.status = status;
+            step.dueDate = dueDate;
+            step.checklist = checklist;
+            step.assignee = assignee;
+          }
+        } else {
+          p.steps.push({
+            id: 'step-' + Date.now(),
+            title,
+            status,
+            dueDate,
+            checklist,
+            assignee
+          });
+        }
+
+        this.saveData();
+        this.closeAllModals();
+        this.renderSteps();
+        this.updateGlobalProgress();
+        this.renderCalendar();
+        this.renderSidebarProjects();
+        this.showToast('Step saved successfully.');
+      }
+
+      editStep(stepId) {
+        const p = this.getActiveProject();
+        const step = p.steps.find(s => s.id === stepId);
+        if (step) this.openStepModal(step);
+      }
+
+      deleteStep(stepId) {
+        const p = this.getActiveProject();
+        p.steps = p.steps.filter(s => s.id !== stepId);
+        this.saveData();
+        this.renderSteps();
+        this.updateGlobalProgress();
+        this.renderSidebarProjects();
+        this.showToast('Step removed.');
+      }
+
+      applyDefaultWorkflowTemplate() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        const confirmReset = window.confirm('Apply standard 7-step software workflow to this project? Existing custom steps will be supplemented.');
+        if (!confirmReset) return;
+
+        const defaultSteps = [
+          { title: '1. Concept & Problem Definition', status: 'Not Started', dueDate: '', assignee: 'Product Lead', checklist: ['User interviews', 'Value proposition validation'] },
+          { title: '2. Market Benchmarking & Features Spec', status: 'Not Started', dueDate: '', assignee: 'Strategy', checklist: ['Competitor audit', 'Feature diff list'] },
+          { title: '3. Technical Architecture & Data Model', status: 'Not Started', dueDate: '', assignee: 'Lead Dev', checklist: ['Database schema', 'API endpoint design'] },
+          { title: '4. Wireframes, Mockups & UI Design', status: 'Not Started', dueDate: '', assignee: 'UI/UX', checklist: ['Figma wireframes', 'Responsive component kit'] },
+          { title: '5. Core Development Sprints', status: 'Not Started', dueDate: '', assignee: 'Frontend/Backend Devs', checklist: ['Sprint 1 MVP', 'Integration tests'] },
+          { title: '6. QA, Usability & Stress Testing', status: 'Not Started', dueDate: '', assignee: 'QA Engineer', checklist: ['Cross-device testing', 'Bug triage'] },
+          { title: '7. Launch, Deployment & Handover', status: 'Not Started', dueDate: '', assignee: 'DevOps / Stakeholder', checklist: ['Live production release', 'Client sign-off'] }
+        ];
+
+        p.steps = defaultSteps.map((s, idx) => ({
+          id: `step-${Date.now()}-${idx}`,
+          ...s
+        }));
+
+        this.saveData();
+        this.renderSteps();
+        this.updateGlobalProgress();
+        this.renderSidebarProjects();
+        this.showToast('Standard 7-step workflow applied!');
+      }
+
+      renderCompetitorsAndFeatures() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        p.competitors = p.competitors || [];
+        p.features = p.features || [];
+
+        // 1. Competitor Cards
+        this.competitorsGrid.innerHTML = '';
+        if (p.competitors.length === 0) {
+          this.competitorsGrid.innerHTML = `
+            <div class="col-span-full glass-card p-6 rounded-2xl text-center text-xs text-slate-400">
+              No competitors added yet. Click <strong>"Add Competitor"</strong> above to benchmark existing tools on the market.
+            </div>
+          `;
+        } else {
+          p.competitors.forEach(comp => {
+            const card = document.createElement('div');
+            card.className = 'glass-card rounded-2xl p-4 space-y-3 flex flex-col justify-between border border-slate-800';
+            card.innerHTML = `
+              <div>
+                <div class="flex items-center justify-between">
+                  <h5 class="text-sm font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-building text-brand-400"></i> ${comp.name}
+                  </h5>
+                  <div class="flex items-center space-x-1">
+                    <button onclick="app.editCompetitor('${comp.id}')" class="p-1 text-slate-400 hover:text-white transition"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                    <button onclick="app.deleteCompetitor('${comp.id}')" class="p-1 text-slate-400 hover:text-red-400 transition"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                  </div>
+                </div>
+                ${comp.url ? `<a href="${comp.url}" target="_blank" class="text-[11px] text-brand-accent hover:underline flex items-center gap-1 mt-0.5"><i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> ${comp.url}</a>` : ''}
+                
+                <div class="mt-3 space-y-2 text-xs">
+                  <div class="bg-emerald-950/20 p-2 rounded-lg border border-emerald-500/20">
+                    <span class="font-semibold text-emerald-400 block mb-0.5">Pros / What they do well:</span>
+                    <span class="text-slate-300 text-[11px]">${comp.pros || 'None noted'}</span>
+                  </div>
+                  <div class="bg-rose-950/20 p-2 rounded-lg border border-rose-500/20">
+                    <span class="font-semibold text-rose-400 block mb-0.5">Cons / Shortcomings:</span>
+                    <span class="text-slate-300 text-[11px]">${comp.cons || 'None noted'}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                <span class="text-slate-400">Price Model:</span>
+                <span class="font-semibold text-white bg-slate-800 px-2 py-0.5 rounded">${comp.pricing || 'Unknown'}</span>
+              </div>
+            `;
+            this.competitorsGrid.appendChild(card);
+          });
+        }
+
+        // 2. Feature Comparison Matrix
+        this.featuresTableBody.innerHTML = '';
+        if (p.features.length === 0) {
+          this.featuresTableBody.innerHTML = `
+            <tr>
+              <td colspan="5" class="py-6 text-center text-xs text-slate-500">
+                No feature specifications added. Click "Add Feature Spec" to define how your project differentiates from the market.
+              </td>
+            </tr>
+          `;
+        } else {
+          p.features.forEach(feat => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-800/40 transition';
+            
+            const badgeClass = 
+              feat.priority === 'Unique Differentiator' ? 'bg-brand-500/20 text-brand-300 border-brand-500/40' :
+              feat.priority === 'Must Have (Core MVP)' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+              feat.priority === 'Nice to Have (v2)' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' :
+              'bg-slate-800 text-slate-400 border-slate-700';
+
+            tr.innerHTML = `
+              <td class="py-3 px-4 font-semibold text-white">${feat.name}</td>
+              <td class="py-3 px-4 text-slate-400 text-xs">${feat.competitorState || '—'}</td>
+              <td class="py-3 px-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium border ${badgeClass}">
+                  ${feat.priority}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-xs text-brand-accent">${feat.advantage || '—'}</td>
+              <td class="py-3 px-4 text-right space-x-1">
+                <button onclick="app.editFeature('${feat.id}')" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                <button onclick="app.deleteFeature('${feat.id}')" class="p-1 text-slate-400 hover:text-red-400"><i class="fa-regular fa-trash-can text-xs"></i></button>
+              </td>
+            `;
+            this.featuresTableBody.appendChild(tr);
+          });
+        }
+      }
+
+      openCompetitorModal(existing = null) {
+        document.getElementById('modalCompetitorId').value = existing ? existing.id : '';
+        document.getElementById('modalCompName').value = existing ? existing.name : '';
+        document.getElementById('modalCompUrl').value = existing ? existing.url : '';
+        document.getElementById('modalCompPros').value = existing ? existing.pros : '';
+        document.getElementById('modalCompCons').value = existing ? existing.cons : '';
+        document.getElementById('modalCompPricing').value = existing ? existing.pricing : '';
+        document.getElementById('competitorModalTitle').querySelector('span').textContent = existing ? 'Edit Competitor' : 'Add Competitor';
+        this.openModal(this.competitorModal);
+      }
+
+      handleSaveCompetitor() {
+        const id = document.getElementById('modalCompetitorId').value;
+        const name = document.getElementById('modalCompName').value.trim();
+        const url = document.getElementById('modalCompUrl').value.trim();
+        const pros = document.getElementById('modalCompPros').value.trim();
+        const cons = document.getElementById('modalCompCons').value.trim();
+        const pricing = document.getElementById('modalCompPricing').value.trim();
+
+        if (!name) {
+          this.showToast('Please provide a competitor name', 'error');
+          return;
+        }
+
+        const p = this.getActiveProject();
+        if (id) {
+          const comp = p.competitors.find(c => c.id === id);
+          if (comp) {
+            comp.name = name;
+            comp.url = url;
+            comp.pros = pros;
+            comp.cons = cons;
+            comp.pricing = pricing;
+          }
+        } else {
+          p.competitors.push({
+            id: 'comp-' + Date.now(),
+            name, url, pros, cons, pricing
+          });
+        }
+
+        this.saveData();
+        this.closeAllModals();
+        this.renderCompetitorsAndFeatures();
+        this.updateGlobalProgress();
+        this.showToast('Competitor data saved.');
+      }
+
+      editCompetitor(compId) {
+        const p = this.getActiveProject();
+        const comp = p.competitors.find(c => c.id === compId);
+        if (comp) this.openCompetitorModal(comp);
+      }
+
+      deleteCompetitor(compId) {
+        const p = this.getActiveProject();
+        p.competitors = p.competitors.filter(c => c.id !== compId);
+        this.saveData();
+        this.renderCompetitorsAndFeatures();
+        this.updateGlobalProgress();
+        this.showToast('Competitor removed.');
+      }
+
+      openFeatureModal(existing = null) {
+        document.getElementById('modalFeatureId').value = existing ? existing.id : '';
+        document.getElementById('modalFeatureName').value = existing ? existing.name : '';
+        document.getElementById('modalFeatureCompetitorState').value = existing ? existing.competitorState : '';
+        document.getElementById('modalFeaturePriority').value = existing ? existing.priority : 'Must Have (Core MVP)';
+        document.getElementById('modalFeatureAdvantage').value = existing ? existing.advantage : '';
+        document.getElementById('featureModalTitle').querySelector('span').textContent = existing ? 'Edit Feature' : 'Add Feature Specification';
+        this.openModal(this.featureModal);
+      }
+
+      handleSaveFeature() {
+        const id = document.getElementById('modalFeatureId').value;
+        const name = document.getElementById('modalFeatureName').value.trim();
+        const competitorState = document.getElementById('modalFeatureCompetitorState').value.trim();
+        const priority = document.getElementById('modalFeaturePriority').value;
+        const advantage = document.getElementById('modalFeatureAdvantage').value.trim();
+
+        if (!name) {
+          this.showToast('Please specify a feature name', 'error');
+          return;
+        }
+
+        const p = this.getActiveProject();
+        if (id) {
+          const feat = p.features.find(f => f.id === id);
+          if (feat) {
+            feat.name = name;
+            feat.competitorState = competitorState;
+            feat.priority = priority;
+            feat.advantage = advantage;
+          }
+        } else {
+          p.features.push({
+            id: 'feat-' + Date.now(),
+            name, competitorState, priority, advantage
+          });
+        }
+
+        this.saveData();
+        this.closeAllModals();
+        this.renderCompetitorsAndFeatures();
+        this.showToast('Feature spec added to matrix.');
+      }
+
+      editFeature(featId) {
+        const p = this.getActiveProject();
+        const feat = p.features.find(f => f.id === featId);
+        if (feat) this.openFeatureModal(feat);
+      }
+
+      deleteFeature(featId) {
+        const p = this.getActiveProject();
+        p.features = p.features.filter(f => f.id !== featId);
+        this.saveData();
+        this.renderCompetitorsAndFeatures();
+        this.showToast('Feature removed.');
+      }
+
+      renderCalendar() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        p.calendarMilestones = p.calendarMilestones || [];
+
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        this.calendarMonthYear.textContent = `${monthNames[month]} ${year}`;
+
+        // First day of month & days count
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const prevMonthDays = new Date(year, month, 0).getDate();
+
+        this.calendarGrid.innerHTML = '';
+
+        // Collect events for active project (Steps with due dates + direct Milestones + Target Launch)
+        const dateMap = {};
+
+        if (p.targetDate) {
+          if (!dateMap[p.targetDate]) dateMap[p.targetDate] = [];
+          dateMap[p.targetDate].push({ title: '🚀 Target Launch', type: 'Launch', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' });
+        }
+
+        (p.steps || []).forEach(s => {
+          if (s.dueDate) {
+            if (!dateMap[s.dueDate]) dateMap[s.dueDate] = [];
+            dateMap[s.dueDate].push({
+              title: s.title,
+              type: 'Step Due',
+              color: s.status === 'Completed' ? 'bg-slate-700 text-slate-300' : 'bg-brand-500/20 text-brand-300 border-brand-500/40'
+            });
+          }
+        });
+
+        p.calendarMilestones.forEach(m => {
+          if (m.date) {
+            if (!dateMap[m.date]) dateMap[m.date] = [];
+            dateMap[m.date].push({ title: m.title, type: m.type, color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' });
+          }
+        });
+
+        // 1. Previous month trailing days
+        for (let i = firstDay - 1; i >= 0; i--) {
+          const d = prevMonthDays - i;
+          const cell = document.createElement('div');
+          cell.className = 'min-h-[75px] sm:min-h-[85px] p-1.5 rounded-xl bg-slate-900/30 border border-slate-900 text-slate-600 text-xs';
+          cell.innerHTML = `<span>${d}</span>`;
+          this.calendarGrid.appendChild(cell);
+        }
+
+        // 2. Current Month Days
+        const today = new Date();
+        for (let d = 1; d <= daysInMonth; d++) {
+          const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+          const dayEvents = dateMap[formattedDate] || [];
+
+          const cell = document.createElement('div');
+          cell.className = `min-h-[75px] sm:min-h-[85px] p-1.5 rounded-xl border transition cursor-pointer flex flex-col justify-between ${
+            isToday ? 'bg-brand-950/30 border-brand-500/50' : 'bg-slate-800/40 border-slate-800/80 hover:bg-slate-800/80'
+          }`;
+
+          let eventsHtml = dayEvents.map(e => `
+            <div class="text-[9px] sm:text-[10px] truncate px-1.5 py-0.5 rounded border ${e.color} font-medium" title="${e.title}">
+              ${e.title}
+            </div>
+          `).join('');
+
+          cell.innerHTML = `
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold ${isToday ? 'text-brand-400 bg-brand-500/20 px-1.5 rounded-full' : 'text-slate-300'}">${d}</span>
+                ${dayEvents.length > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>` : ''}
+              </div>
+              <div class="space-y-1">
+                ${eventsHtml}
+              </div>
+            </div>
+          `;
+
+          cell.addEventListener('click', () => {
+            this.handleQuickAddMilestone(formattedDate);
+          });
+
+          this.calendarGrid.appendChild(cell);
+        }
+
+        // Render Upcoming Deliverables Sidebar
+        this.calendarUpcomingList.innerHTML = '';
+        const allEvents = [];
+        Object.keys(dateMap).sort().forEach(dateStr => {
+          dateMap[dateStr].forEach(ev => {
+            allEvents.push({ ...ev, date: dateStr });
+          });
+        });
+
+        if (allEvents.length === 0) {
+          this.calendarUpcomingList.innerHTML = `
+            <div class="p-4 text-center text-xs text-slate-500">
+              No milestones scheduled yet. Set due dates on steps or click any calendar day.
+            </div>
+          `;
+        } else {
+          allEvents.slice(0, 7).forEach(ev => {
+            const item = document.createElement('div');
+            item.className = 'p-2.5 rounded-xl bg-slate-800/60 border border-slate-800 flex items-center justify-between text-xs';
+            item.innerHTML = `
+              <div class="min-w-0 pr-2">
+                <p class="font-bold text-white truncate">${ev.title}</p>
+                <span class="text-[10px] text-slate-400">${ev.type}</span>
+              </div>
+              <span class="text-[11px] font-semibold text-brand-accent bg-slate-900 px-2 py-0.5 rounded border border-slate-700 flex-shrink-0">${ev.date}</span>
+            `;
+            this.calendarUpcomingList.appendChild(item);
+          });
+        }
+      }
+
+      handleQuickAddMilestone(selectedDate = null) {
+        const p = this.getActiveProject();
+        const date = selectedDate || new Date().toISOString().split('T')[0];
+        const title = window.prompt(`Enter milestone or deadline title for ${date}:`, 'Client Architecture Demo');
+        if (!title || !title.trim()) return;
+
+        p.calendarMilestones = p.calendarMilestones || [];
+        p.calendarMilestones.push({
+          id: 'cal-' + Date.now(),
+          title: title.trim(),
+          date: date,
+          type: 'Milestone'
+        });
+
+        this.saveData();
+        this.renderCalendar();
+        this.showToast(`Milestone scheduled for ${date}`);
+      }
+
+      renderAssets() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        p.assets = p.assets || [];
+
+        this.assetsGrid.innerHTML = '';
+        if (p.assets.length === 0) {
+          this.assetsGrid.innerHTML = `
+            <div class="col-span-full glass-card p-8 rounded-2xl text-center text-xs text-slate-400">
+              No mockups or visual assets stored yet. Drag and drop UI wireframes, app screenshots, or architecture diagrams above.
+            </div>
+          `;
+          return;
+        }
+
+        p.assets.forEach(asset => {
+          const card = document.createElement('div');
+          card.className = 'glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between group';
+          card.innerHTML = `
+            <div class="relative overflow-hidden bg-slate-900 h-44 cursor-pointer" onclick="app.previewImage('${asset.id}')">
+              <img src="${asset.url}" alt="${asset.name}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.src='https://placehold.co/600x400/1e293b/818cf8?text=Image+Load+Fallback'">
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span class="text-xs bg-slate-900/90 text-white px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5"><i class="fa-regular fa-eye"></i> View Preview</span>
+              </div>
+            </div>
+            <div class="p-3.5 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <h5 class="text-xs font-bold text-white truncate">${asset.name}</h5>
+                <button onclick="app.deleteAsset('${asset.id}')" class="text-slate-400 hover:text-red-400 transition text-xs"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+              <p class="text-[11px] text-slate-400 line-clamp-2">${asset.caption || 'No caption'}</p>
+              <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
+                <span>${asset.date}</span>
+                <span class="bg-brand-500/10 text-brand-300 border border-brand-500/30 px-2 py-0.5 rounded">${asset.tag || 'Mockup'}</span>
+              </div>
+            </div>
+          `;
+          this.assetsGrid.appendChild(card);
+        });
+      }
+
+      handleFileUpload(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          this.showToast('Please select a valid image file (PNG, JPG, SVG, WebP)', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Url = e.target.result;
+          const caption = window.prompt('Enter an optional caption / note for this mockup:', file.name);
+          const p = this.getActiveProject();
+          p.assets = p.assets || [];
+
+          p.assets.unshift({
+            id: 'ast-' + Date.now(),
+            name: file.name,
+            caption: caption || '',
+            tag: 'Concept / UI',
+            date: new Date().toISOString().split('T')[0],
+            url: base64Url
+          });
+
+          this.saveData();
+          this.renderAssets();
+          this.updateGlobalProgress();
+          this.showToast('Image uploaded and saved to project!');
+        };
+        reader.readAsDataURL(file);
+      }
+
+      previewImage(assetId) {
+        const p = this.getActiveProject();
+        const asset = p.assets.find(a => a.id === assetId);
+        if (!asset) return;
+
+        this.imageModalPreview.src = asset.url;
+        this.imageModalCaption.textContent = asset.name + (asset.caption ? ` — ${asset.caption}` : '');
+        this.imageModalDate.textContent = `Uploaded on ${asset.date}`;
+        this.imageModal.classList.remove('hidden');
+      }
+
+      deleteAsset(assetId) {
+        const p = this.getActiveProject();
+        p.assets = p.assets.filter(a => a.id !== assetId);
+        this.saveData();
+        this.renderAssets();
+        this.updateGlobalProgress();
+        this.showToast('Asset deleted.');
+      }
+
+      renderNotes() {
+        const p = this.getActiveProject();
+        if (!p) return;
+        p.notes = p.notes || [];
+
+        const query = (this.noteSearchInput.value || '').toLowerCase();
+        let filtered = p.notes.filter(n => {
+          const matchesQuery = n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query);
+          const matchesTag = this.activeFilterNoteTag === 'ALL' || n.category === this.activeFilterNoteTag;
+          return matchesQuery && matchesTag;
+        });
+
+        this.notesContainer.innerHTML = '';
+        if (filtered.length === 0) {
+          this.notesContainer.innerHTML = `
+            <div class="col-span-full glass-card p-8 rounded-2xl text-center text-xs text-slate-400">
+              No notes found matching your criteria. Use "Create Note" to capture technical decisions, syncs, or partner discussions.
+            </div>
+          `;
+          return;
+        }
+
+        filtered.forEach(note => {
+          const card = document.createElement('div');
+          card.className = 'glass-card rounded-2xl p-4 flex flex-col justify-between border border-slate-800 space-y-3';
+          card.innerHTML = `
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/30">${note.category}</span>
+                <div class="flex items-center space-x-1">
+                  <button onclick="app.editNote('${note.id}')" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                  <button onclick="app.deleteNote('${note.id}')" class="p-1 text-slate-400 hover:text-red-400"><i class="fa-regular fa-trash-can text-xs"></i></button>
+                </div>
+              </div>
+              <h4 class="text-sm font-bold text-white mt-2 mb-1">${note.title}</h4>
+              <p class="text-xs text-slate-300 whitespace-pre-line leading-relaxed">${note.content}</p>
+            </div>
+            <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between items-center">
+              <span><i class="fa-regular fa-calendar mr-1"></i>${note.date || 'Undated'}</span>
+            </div>
+          `;
+          this.notesContainer.appendChild(card);
+        });
+      }
+
+      openNoteModal(existing = null) {
+        document.getElementById('modalNoteId').value = existing ? existing.id : '';
+        document.getElementById('modalNoteTitle').value = existing ? existing.title : '';
+        document.getElementById('modalNoteCategory').value = existing ? existing.category : 'Architecture';
+        document.getElementById('modalNoteDate').value = existing ? existing.date : new Date().toISOString().split('T')[0];
+        document.getElementById('modalNoteContent').value = existing ? existing.content : '';
+        document.getElementById('noteModalTitle').querySelector('span').textContent = existing ? 'Edit Note' : 'Add Project Note';
+        this.openModal(this.noteModal);
+      }
+
+      handleSaveNote() {
+        const id = document.getElementById('modalNoteId').value;
+        const title = document.getElementById('modalNoteTitle').value.trim();
+        const category = document.getElementById('modalNoteCategory').value;
+        const date = document.getElementById('modalNoteDate').value;
+        const content = document.getElementById('modalNoteContent').value.trim();
+
+        if (!title || !content) {
+          this.showToast('Please provide both title and note content', 'error');
+          return;
+        }
+
+        const p = this.getActiveProject();
+        if (id) {
+          const note = p.notes.find(n => n.id === id);
+          if (note) {
+            note.title = title;
+            note.category = category;
+            note.date = date;
+            note.content = content;
+          }
+        } else {
+          p.notes.unshift({
+            id: 'note-' + Date.now(),
+            title, category, date, content
+          });
+        }
+
+        this.saveData();
+        this.closeAllModals();
+        this.renderNotes();
+        this.updateGlobalProgress();
+        this.showToast('Project note saved.');
+      }
+
+      editNote(noteId) {
+        const p = this.getActiveProject();
+        const note = p.notes.find(n => n.id === noteId);
+        if (note) this.openNoteModal(note);
+      }
+
+      deleteNote(noteId) {
+        const p = this.getActiveProject();
+        p.notes = p.notes.filter(n => n.id !== noteId);
+        this.saveData();
+        this.renderNotes();
+        this.updateGlobalProgress();
+        this.showToast('Note deleted.');
+      }
+
+      exportProjectBrief() {
+        const p = this.getActiveProject();
+        if (!p) return;
+
+        const printElem = document.getElementById('printContainer');
+        const pct = this.calculateProjectProgress(p);
+
+        const stepsHtml = (p.steps || []).map(s => `
+          <div style="margin-bottom: 8px; padding: 6px; border-left: 3px solid #6366f1;">
+            <strong>${s.title}</strong> — <em>${s.status}</em> (Due: ${s.dueDate || 'TBD'})
+            <div style="font-size: 12px; color: #475569;">Assignee: ${s.assignee || 'Unassigned'}</div>
+          </div>
+        `).join('');
+
+        const competitorHtml = (p.competitors || []).map(c => `
+          <div style="margin-bottom: 8px;">
+            <strong>${c.name}</strong> (${c.pricing || 'No pricing'})
+            <div style="font-size: 12px;"><strong>Pros:</strong> ${c.pros || 'N/A'} | <strong>Cons:</strong> ${c.cons || 'N/A'}</div>
+          </div>
+        `).join('');
+
+        printElem.innerHTML = `
+          <div style="font-family: Inter, sans-serif; max-width: 800px; margin: 0 auto; color: #0f172a;">
+            <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px;">
+              <h1 style="font-size: 26px; font-weight: 800; margin: 0;">Design Flow Production Planner — Project Brief</h1>
+              <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Generated on ${new Date().toLocaleDateString()} for stakeholder &amp; development review.</p>
+            </div>
+
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="font-size: 18px; margin: 0 0 8px 0; color: #3730a3;">${p.name}</h2>
+              <p><strong>Platform:</strong> ${p.platform} | <strong>Current Status:</strong> ${p.status} | <strong>Progress:</strong> ${pct}%</p>
+              <p><strong>Target Launch Date:</strong> ${p.targetDate || 'TBD'} | <strong>Budget:</strong> ${p.budget || 'Not specified'}</p>
+              <p><strong>Partners / External Dev:</strong> ${p.partners || 'Internal Team'}</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Executive Intent &amp; Value Proposition</h3>
+              <p style="font-size: 13px; line-height: 1.5;">${p.summary || 'None provided'}</p>
+              <p style="font-size: 13px;"><strong>Problem Addressed:</strong> ${p.problem || 'N/A'}</p>
+              <p style="font-size: 13px;"><strong>Competitive Advantage:</strong> ${p.valueProp || 'N/A'}</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Production Pipeline Steps</h3>
+              ${stepsHtml || '<p style="font-size: 12px;">No steps recorded.</p>'}
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Market Benchmarking &amp; Alternatives</h3>
+              ${competitorHtml || '<p style="font-size: 12px;">No competitors logged.</p>'}
+            </div>
+          </div>
+        `;
+
+        // Trigger native print / PDF dialog
+        window.print();
+      }
+
+      downloadFullBackup() {
+        const jsonStr = JSON.stringify(this.data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `design-flow-production-planner-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast('Workspace backup JSON downloaded.');
+      }
+    }
+
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new ProductionPlannerApp();
+    });
+  </script>
+</body>
+</html>
