@@ -2348,6 +2348,725 @@
     2026 &nbsp;|&nbsp; 
         info.biz.developer@gmail.com
 </span>
+<script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --df-bg-dark: #090d16;
+      --df-card-bg: rgba(15, 23, 42, 0.82);
+      --df-border: rgba(56, 189, 248, 0.18);
+      --df-cyan: #38bdf8;
+      --df-indigo: #6366f1;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #060911;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar */
+    .df-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .df-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .df-scroll::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.25);
+      border-radius: 9999px;
+    }
+    .df-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.5);
+    }
 
+    /* Glow & Glass Utilities */
+    .df-glass {
+      background: rgba(13, 20, 36, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+    }
+    .df-glass-highlight {
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.18);
+    }
+    .df-neon-glow {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25), 0 0 45px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Smooth Slide Drawer Transitions */
+    .drawer-right-panel {
+      transform: translateX(100%);
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-right-panel.open {
+      transform: translateX(0);
+    }
+
+    .bottom-affiliate-drawer {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bottom-affiliate-drawer.collapsed {
+      transform: translateY(calc(100% - 46px));
+    }
+    .bottom-affiliate-drawer.hidden-drawer {
+      transform: translateY(100%);
+    }
+
+    /* Pulse Indicator */
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.08); }
+    }
+    .live-dot {
+      animation: subtlePulse 2.4s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- ========================================================================= -->
+  <!-- DEMO HOST APPLICATION BACKGROUND (Simulates your Planner Workspace)       -->
+  <!-- ========================================================================= -->
+  <div class="host-app-preview w-full flex-grow flex flex-col pointer-events-auto">
+    <!-- Mock Top Nav -->
+    <header class="h-14 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <span class="font-bold tracking-tight text-slate-100">FlowCraft</span>
+          <span class="text-xs text-cyan-400 font-mono-code ml-1.5 px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-800/60">v2.4 DEV</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <span class="hidden sm:inline-flex items-center text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 live-dot"></span> Local Storage Session Active
+        </span>
+        <button id="reopenWelcomeBtn" class="px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Modal & Guidance
+        </button>
+      </div>
+    </header>
+
+    <!-- Mock Canvas / Flow Space -->
+    <main class="flex-grow p-6 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-5 pb-32">
+      <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur relative overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs uppercase font-mono-code text-cyan-400 tracking-wider">Node Diagram</span>
+          <span class="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 text-[11px] border border-cyan-500/20">Canvas</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">Design Flow Architecture</h3>
+        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+          Drag, drop, and construct user journey wireframes, edge cases, and API contract logic. Remember to trigger exports to persist your file locally.
+        </p>
+        <div class="h-28 rounded-xl border border-dashed border-slate-700/80 bg-slate-950/40 flex items-center justify-center text-xs text-slate-500">
+          Interactive Planner Grid
+        </div>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs uppercase font-mono-code text-indigo-400 tracking-wider">Milestones</span>
+          <span class="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 text-[11px] border border-indigo-500/20">Sprint 1</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">Feature Specification</h3>
+        <ul class="text-xs text-slate-300 space-y-2.5">
+          <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Client-side schema design validation</li>
+          <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Responsive breakpoint simulator</li>
+          <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> JSON / SVG snapshot pipeline</li>
+        </ul>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs uppercase font-mono-code text-emerald-400 tracking-wider">Workspace Advice</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px] border border-emerald-500/20">Saved in RAM</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">Local Responsibility</h3>
+        <p class="text-xs text-slate-400 leading-relaxed mb-3">
+          As a lightweight privacy-focused client utility, no central cloud database stores your active canvas nodes.
+        </p>
+        <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200/90 text-xs">
+          Notice: Ensure you download backups using the bottom toolbar before clearing browser caches.
+        </div>
+      </div>
+    </main>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- START: MODULAR DROP-IN SNIPPET (PASTE BEFORE CLOSING </body>)            -->
+  <!-- ========================================================================= -->
+  <div id="flowModularSuite" class="relative z-50 text-slate-100">
+
+    <!-- 1. TECH-MODERN WELCOME & USAGE DISCLAIMER MODAL -->
+    <div id="flowWelcomeModalOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 md:p-6 transition-all duration-300 opacity-100 visible">
+      <div class="df-glass df-glass-highlight w-full max-w-2xl rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Ambient neon background flare -->
+        <div class="absolute -top-24 -right-24 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Header -->
+        <div class="flex items-start justify-between border-b border-slate-800/80 pb-4 mb-5">
+          <div>
+            <div class="flex items-center space-x-2 mb-1.5">
+              <span class="text-[11px] font-mono-code px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> FLOW ENGINE
+              </span>
+              <span class="text-[11px] font-mono-code px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800/80">
+                PRO & CREATIVE TIER
+              </span>
+            </div>
+            <h2 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              Welcome to the System Planner
+            </h2>
+          </div>
+        </div>
+
+        <!-- Scrollable Modal Content -->
+        <div class="df-scroll overflow-y-auto space-y-5 pr-1.5 text-sm leading-relaxed text-slate-300">
+          
+          <!-- About the App -->
+          <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800/80">
+            <h3 class="text-xs uppercase font-mono-code tracking-wider text-cyan-400 mb-2 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              About The Application
+            </h3>
+            <p class="text-slate-300 text-xs md:text-sm">
+              An agile, distraction-free visual flow-diagramming and structural layout engine. Plan reactive states, UI component hierarchies, user interaction loops, and system logic with low-latency client performance.
+            </p>
+          </div>
+
+          <!-- Who It's For -->
+          <div>
+            <h3 class="text-xs uppercase font-mono-code tracking-wider text-slate-400 mb-2.5">Built Purposefully For</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
+                <div class="text-cyan-400 mb-1 flex justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <div class="font-semibold text-xs text-white">Developers</div>
+                <div class="text-[10px] text-slate-400">Logic & Architecture</div>
+              </div>
+              <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
+                <div class="text-indigo-400 mb-1 flex justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                </div>
+                <div class="font-semibold text-xs text-white">UI/UX Designers</div>
+                <div class="text-[10px] text-slate-400">User Flows & Layouts</div>
+              </div>
+              <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
+                <div class="text-sky-400 mb-1 flex justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="font-semibold text-xs text-white">Freelancers</div>
+                <div class="text-[10px] text-slate-400">Client Blueprints</div>
+              </div>
+              <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
+                <div class="text-emerald-400 mb-1 flex justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="font-semibold text-xs text-white">Hobby Builders</div>
+                <div class="text-[10px] text-slate-400">Side Project Stacks</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Usage Responsibility Disclaimer -->
+          <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200/90 space-y-2">
+            <div class="flex items-center gap-2 font-semibold text-amber-300 text-xs uppercase tracking-wide">
+              <svg class="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              Important: User Responsibility & Data Persistence Notice
+            </div>
+            <p class="text-xs leading-relaxed text-amber-200/80">
+              This planner runs entirely client-side inside your browser for zero-latency, private, and offline design workflows. <strong class="text-amber-100 font-medium">You are solely responsible for saving, backing up, or exporting your flow schemas (JSON/PNG/SVG).</strong> Clearing browser caches, incognito sessions, or tab discards can permanently reset unsaved canvas states.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Footer / Agreement and Enter CTA -->
+        <div class="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <label class="flex items-center gap-3 cursor-pointer select-none text-xs text-slate-300 hover:text-white group">
+            <input type="checkbox" id="agreeTermsCheckbox" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-950 transition cursor-pointer">
+            <span class="group-hover:text-cyan-200 transition">I understand &amp; accept full responsibility for saving my local work</span>
+          </label>
+
+          <button id="enterAppBtn" disabled class="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold text-xs tracking-wide uppercase transition-all duration-200 bg-slate-800 text-slate-500 cursor-not-allowed opacity-60 flex items-center justify-center gap-2">
+            <span>Enter App</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2. SLIDE-OUT RIGHT SOCIAL SHARING DRAWER -->
+    <!-- Trigger Tab Button -->
+    <button id="socialDrawerOpenBtn" aria-label="Open Social Share" class="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-slate-900/90 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 border-l border-t border-b border-cyan-500/30 rounded-l-xl px-2.5 py-4 shadow-xl shadow-cyan-500/10 transition-all duration-300 flex flex-col items-center gap-2 group">
+      <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+      <span class="text-[10px] font-mono-code font-bold tracking-wider [writing-mode:vertical-rl] rotate-180 uppercase text-slate-300 group-hover:text-cyan-300">Share</span>
+    </button>
+
+    <!-- Social Drawer Backdrop & Panel -->
+    <div id="socialDrawerBackdrop" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300"></div>
+
+    <aside id="socialDrawerPanel" class="drawer-right-panel fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 df-glass border-l border-slate-700/80 shadow-2xl flex flex-col">
+      <!-- Drawer Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          </div>
+          <span class="font-bold text-white text-sm">Spread The Word</span>
+        </div>
+        <button id="socialDrawerCloseBtn" aria-label="Close share panel" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Drawer Body -->
+      <div class="p-5 flex-grow space-y-4 text-xs df-scroll overflow-y-auto">
+        <p class="text-slate-400">
+          Empower other creators, engineers, and UX planners by sharing this visual system tool.
+        </p>
+
+        <!-- Social Buttons Grid -->
+        <div class="space-y-2 pt-2">
+          <!-- X / Twitter -->
+          <a id="shareTwitterBtn" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-200 transition group">
+            <div class="flex items-center space-x-3">
+              <span class="w-7 h-7 rounded-lg bg-black flex items-center justify-center font-bold text-white text-xs">𝕏</span>
+              <span class="font-medium group-hover:text-cyan-300 transition">Share to X / Twitter</span>
+            </div>
+            <svg class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+
+          <!-- LinkedIn -->
+          <a id="shareLinkedInBtn" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-200 transition group">
+            <div class="flex items-center space-x-3">
+              <span class="w-7 h-7 rounded-lg bg-sky-600/20 text-sky-400 flex items-center justify-center font-bold text-xs">in</span>
+              <span class="font-medium group-hover:text-cyan-300 transition">Share to LinkedIn</span>
+            </div>
+            <svg class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+
+          <!-- Reddit -->
+          <a id="shareRedditBtn" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-200 transition group">
+            <div class="flex items-center space-x-3">
+              <span class="w-7 h-7 rounded-lg bg-orange-600/20 text-orange-400 flex items-center justify-center font-bold text-xs">r/</span>
+              <span class="font-medium group-hover:text-cyan-300 transition">Post to Reddit</span>
+            </div>
+            <svg class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+
+          <!-- Facebook -->
+          <a id="shareFacebookBtn" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-200 transition group">
+            <div class="flex items-center space-x-3">
+              <span class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">f</span>
+              <span class="font-medium group-hover:text-cyan-300 transition">Share to Facebook</span>
+            </div>
+            <svg class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+        <!-- Quick Copy Link Box -->
+        <div class="pt-4 border-t border-slate-800/80">
+          <label class="block text-[11px] font-mono-code text-slate-400 uppercase tracking-wider mb-2">Direct Link</label>
+          <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+            <input id="shareLinkInput" type="text" readonly class="bg-transparent text-xs text-slate-400 font-mono-code px-2 w-full focus:outline-none select-all" value="">
+            <button id="copyShareLinkBtn" class="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-lg text-xs font-semibold tracking-wide border border-cyan-500/30 transition shrink-0 flex items-center gap-1">
+              <span id="copyBtnText">Copy</span>
+            </button>
+          </div>
+          <span id="copySuccessBadge" class="hidden text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Copied to clipboard!
+          </span>
+        </div>
+
+        <!-- Native Share Option (conditional display via JS) -->
+        <button id="nativeShareBtn" class="hidden w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs tracking-wide shadow-md transition items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Use Device Share Menu
+        </button>
+      </div>
+    </aside>
+
+    <!-- 3. BOTTOM DRAWER: PARTNER & ECOSYSTEM HUB (espressohub.app) -->
+    <div id="bottomAffiliateDrawer" class="bottom-affiliate-drawer fixed bottom-0 left-0 right-0 z-30 df-glass border-t border-cyan-500/20 shadow-2xl transition-all duration-300">
+      
+      <!-- Collapsible Handle Bar -->
+      <div id="drawerToggleBar" class="h-11 px-4 md:px-6 flex items-center justify-between cursor-pointer bg-slate-900/90 hover:bg-slate-800/90 border-b border-slate-800/80 transition select-none">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 live-dot"></div>
+          <span class="text-xs font-mono-code font-bold tracking-wider uppercase text-cyan-300">Partner Ecosystem</span>
+          <span class="text-slate-500 text-xs">•</span>
+          <span class="text-xs text-slate-300 hidden sm:inline">Productivity &amp; Entertainment Suites on <strong class="text-white hover:underline">espressohub.app</strong></span>
+        </div>
+        
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+          <span id="drawerToggleStatusText" class="text-[11px] font-mono-code hidden md:inline">Collapse Menu</span>
+          <div id="drawerToggleChevron" class="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center text-cyan-400 transition-transform duration-300">
+            <!-- Down arrow when open -->
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Content: Affiliate App Showcase Grid -->
+      <div id="drawerContentBody" class="p-4 md:p-6 bg-slate-950/95 max-w-7xl mx-auto">
+        <div class="flex items-center justify-between mb-3 text-xs">
+          <p class="text-slate-400">
+            Recommended companion engineering toolkits and creative outlets from our verified partner network:
+          </p>
+          <a href="https://espressohub.app" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-mono-code text-[11px] hover:underline">
+            Visit espressohub.app
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </a>
+        </div>
+
+        <!-- 4 Featured App Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          
+          <!-- App 1: Web Template Generator -->
+          <a href="https://espressohub.app" target="_blank" rel="noopener noreferrer" class="group p-4 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/50 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between mb-2">
+                <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                </div>
+                <span class="text-[10px] font-mono-code text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800/80">Productivity</span>
+              </div>
+              <h4 class="font-bold text-white text-sm group-hover:text-cyan-300 transition flex items-center gap-1.5">
+                Web Template Generator
+                <svg class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Generate production-ready CSS, Tailwind layout primitives, and starter site blueprints instantaneously.
+              </p>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono-code text-slate-400">
+              <span>espressohub.app</span>
+              <span class="text-cyan-400 font-semibold group-hover:underline">Launch →</span>
+            </div>
+          </a>
+
+          <!-- App 2: Project Planner -->
+          <a href="https://espressohub.app" target="_blank" rel="noopener noreferrer" class="group p-4 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/50 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between mb-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </div>
+                <span class="text-[10px] font-mono-code text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800/80">Planning</span>
+              </div>
+              <h4 class="font-bold text-white text-sm group-hover:text-indigo-300 transition flex items-center gap-1.5">
+                Agile Project Planner
+                <svg class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Task hierarchy, sprint milestones, release burndowns, and kanban engines optimized for freelance deliverables.
+              </p>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono-code text-slate-400">
+              <span>espressohub.app</span>
+              <span class="text-indigo-400 font-semibold group-hover:underline">Launch →</span>
+            </div>
+          </a>
+
+          <!-- App 3: Code Academy -->
+          <a href="https://espressohub.app" target="_blank" rel="noopener noreferrer" class="group p-4 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-emerald-500/50 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between mb-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                </div>
+                <span class="text-[10px] font-mono-code text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800/80">Skill Mastery</span>
+              </div>
+              <h4 class="font-bold text-white text-sm group-hover:text-emerald-300 transition flex items-center gap-1.5">
+                Interactive Code Academy
+                <svg class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Step-by-step algorithms, TypeScript tutorials, and CSS architecture labs to level up design engineering.
+              </p>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono-code text-slate-400">
+              <span>espressohub.app</span>
+              <span class="text-emerald-400 font-semibold group-hover:underline">Launch →</span>
+            </div>
+          </a>
+
+          <!-- App 4: Entertainment & Arcade Hub -->
+          <a href="https://espressohub.app" target="_blank" rel="noopener noreferrer" class="group p-4 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-pink-500/50 transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between mb-2">
+                <div class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="text-[10px] font-mono-code text-pink-400 bg-pink-950 px-2 py-0.5 rounded border border-pink-800/80">Entertainment</span>
+              </div>
+              <h4 class="font-bold text-white text-sm group-hover:text-pink-300 transition flex items-center gap-1.5">
+                Entertainment &amp; Arcade
+                <svg class="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Take a quick mental reset with browser mini-games, retro arcades, and creative audio generative toys.
+              </p>
+            </div>
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono-code text-slate-400">
+              <span>espressohub.app</span>
+              <span class="text-pink-400 font-semibold group-hover:underline">Launch →</span>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- ========================================================================= -->
+  <!-- END: MODULAR DROP-IN SNIPPET                                             -->
+  <!-- ========================================================================= -->
+
+  <script>
+    (function initFlowModularSuite() {
+      // Storage Key
+      const STORAGE_KEY = 'flowcraft_terms_accepted_v1';
+      const CURRENT_URL = window.location.href;
+      const SHARE_TITLE = 'FlowCraft - Tech-Modern Design Flow System & Planner';
+      const SHARE_TEXT = 'Check out this design flow system and planner for developers, designers, and creative builders!';
+
+      // DOM Elements
+      const welcomeOverlay = document.getElementById('flowWelcomeModalOverlay');
+      const agreeCheckbox = document.getElementById('agreeTermsCheckbox');
+      const enterBtn = document.getElementById('enterAppBtn');
+      const reopenWelcomeBtn = document.getElementById('reopenWelcomeBtn');
+
+      // Social Drawer Elements
+      const socialOpenBtn = document.getElementById('socialDrawerOpenBtn');
+      const socialCloseBtn = document.getElementById('socialDrawerCloseBtn');
+      const socialBackdrop = document.getElementById('socialDrawerBackdrop');
+      const socialPanel = document.getElementById('socialDrawerPanel');
+      const shareLinkInput = document.getElementById('shareLinkInput');
+      const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+      const copyBtnText = document.getElementById('copyBtnText');
+      const copySuccessBadge = document.getElementById('copySuccessBadge');
+      const nativeShareBtn = document.getElementById('nativeShareBtn');
+
+      const shareTwitterBtn = document.getElementById('shareTwitterBtn');
+      const shareLinkedInBtn = document.getElementById('shareLinkedInBtn');
+      const shareRedditBtn = document.getElementById('shareRedditBtn');
+      const shareFacebookBtn = document.getElementById('shareFacebookBtn');
+
+      // Affiliate Bottom Drawer Elements
+      const bottomDrawer = document.getElementById('bottomAffiliateDrawer');
+      const drawerToggleBar = document.getElementById('drawerToggleBar');
+      const drawerToggleChevron = document.getElementById('drawerToggleChevron');
+      const drawerToggleStatusText = document.getElementById('drawerToggleStatusText');
+
+      let isDrawerCollapsed = false;
+
+      // 1. Welcome Modal Logic
+      function checkAcceptance() {
+        const hasAccepted = localStorage.getItem(STORAGE_KEY) === 'true';
+        if (hasAccepted) {
+          closeWelcomeModal(false);
+          openAffiliateDrawer();
+        } else {
+          openWelcomeModal();
+          // Keep bottom drawer hidden until welcome is handled
+          bottomDrawer.classList.add('hidden-drawer');
+        }
+      }
+
+      function openWelcomeModal() {
+        welcomeOverlay.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+        welcomeOverlay.classList.add('opacity-100', 'visible');
+      }
+
+      function closeWelcomeModal(savePreference = true) {
+        welcomeOverlay.classList.remove('opacity-100', 'visible');
+        welcomeOverlay.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+        if (savePreference) {
+          localStorage.setItem(STORAGE_KEY, 'true');
+        }
+        // Requirement: open bottom drawer by default immediately after dismissing modal
+        openAffiliateDrawer();
+      }
+
+      // Checkbox enabling 'Enter App'
+      if (agreeCheckbox && enterBtn) {
+        agreeCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+            enterBtn.removeAttribute('disabled');
+            enterBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
+            enterBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
+          } else {
+            enterBtn.setAttribute('disabled', 'true');
+            enterBtn.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
+            enterBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
+          }
+        });
+
+        enterBtn.addEventListener('click', function () {
+          if (agreeCheckbox.checked) {
+            closeWelcomeModal(true);
+          }
+        });
+      }
+
+      // Reopen modal toggle from demo header
+      if (reopenWelcomeBtn) {
+        reopenWelcomeBtn.addEventListener('click', () => {
+          openWelcomeModal();
+        });
+      }
+
+      // 2. Slide-out Social Share Drawer Logic
+      function openSocialDrawer() {
+        socialBackdrop.classList.remove('hidden');
+        setTimeout(() => {
+          socialBackdrop.classList.remove('opacity-0');
+          socialPanel.classList.add('open');
+        }, 10);
+      }
+
+      function closeSocialDrawer() {
+        socialPanel.classList.remove('open');
+        socialBackdrop.classList.add('opacity-0');
+        setTimeout(() => {
+          socialBackdrop.classList.add('hidden');
+        }, 300);
+      }
+
+      if (socialOpenBtn) socialOpenBtn.addEventListener('click', openSocialDrawer);
+      if (socialCloseBtn) socialCloseBtn.addEventListener('click', closeSocialDrawer);
+      if (socialBackdrop) socialBackdrop.addEventListener('click', closeSocialDrawer);
+
+      // Populate Social Links
+      if (shareLinkInput) {
+        shareLinkInput.value = CURRENT_URL;
+      }
+
+      const encodedUrl = encodeURIComponent(CURRENT_URL);
+      const encodedText = encodeURIComponent(SHARE_TEXT);
+
+      if (shareTwitterBtn) {
+        shareTwitterBtn.href = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+      }
+      if (shareLinkedInBtn) {
+        shareLinkedInBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+      }
+      if (shareRedditBtn) {
+        shareRedditBtn.href = `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`;
+      }
+      if (shareFacebookBtn) {
+        shareFacebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+      }
+
+      // Copy to clipboard fallback logic
+      if (copyShareLinkBtn) {
+        copyShareLinkBtn.addEventListener('click', function () {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(shareLinkInput.value).then(onCopySuccess, fallbackCopy);
+            } else {
+              fallbackCopy();
+            }
+          } catch (err) {
+            fallbackCopy();
+          }
+        });
+      }
+
+      function fallbackCopy() {
+        shareLinkInput.focus();
+        shareLinkInput.select();
+        try {
+          document.execCommand('copy');
+          onCopySuccess();
+        } catch (e) {
+          copyBtnText.textContent = 'Failed';
+        }
+      }
+
+      function onCopySuccess() {
+        copyBtnText.textContent = 'Copied!';
+        copySuccessBadge.classList.remove('hidden');
+        setTimeout(() => {
+          copyBtnText.textContent = 'Copy';
+          copySuccessBadge.classList.add('hidden');
+        }, 2500);
+      }
+
+      // Web Share API fallback if supported
+      if (navigator.share && nativeShareBtn) {
+        nativeShareBtn.classList.remove('hidden');
+        nativeShareBtn.classList.add('flex');
+        nativeShareBtn.addEventListener('click', async () => {
+          try {
+            await navigator.share({
+              title: SHARE_TITLE,
+              text: SHARE_TEXT,
+              url: CURRENT_URL
+            });
+          } catch (err) {
+            // User aborted or canceled share
+          }
+        });
+      }
+
+      // 3. Bottom Affiliate Drawer Logic
+      function openAffiliateDrawer() {
+        bottomDrawer.classList.remove('hidden-drawer');
+        bottomDrawer.classList.remove('collapsed');
+        isDrawerCollapsed = false;
+        updateDrawerStateVisuals();
+      }
+
+      function toggleAffiliateDrawer() {
+        isDrawerCollapsed = !isDrawerCollapsed;
+        if (isDrawerCollapsed) {
+          bottomDrawer.classList.add('collapsed');
+        } else {
+          bottomDrawer.classList.remove('collapsed');
+        }
+        updateDrawerStateVisuals();
+      }
+
+      function updateDrawerStateVisuals() {
+        if (isDrawerCollapsed) {
+          drawerToggleChevron.style.transform = 'rotate(180deg)';
+          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Expand Partner Hub';
+        } else {
+          drawerToggleChevron.style.transform = 'rotate(0deg)';
+          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Collapse Menu';
+        }
+      }
+
+      if (drawerToggleBar) {
+        drawerToggleBar.addEventListener('click', toggleAffiliateDrawer);
+      }
+
+      // Initialize status on window load
+      window.addEventListener('DOMContentLoaded', checkAcceptance);
+      // Run once immediately in case DOM is already ready
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        checkAcceptance();
+      }
+    })();
+  </script>
 </body>
 </html>
