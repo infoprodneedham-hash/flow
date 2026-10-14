@@ -4,6 +4,234 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Design Flow Production Planner</title>
+   <script>
+    (function initFlowModularSuite() {
+      // Storage Key
+      const STORAGE_KEY = 'flowcraft_terms_accepted_v1';
+      const CURRENT_URL = window.location.href;
+      const SHARE_TITLE = 'FlowCraft - Tech-Modern Design Flow System & Planner';
+      const SHARE_TEXT = 'Check out this design flow system and planner for developers, designers, and creative builders!';
+
+      // DOM Elements
+      const welcomeOverlay = document.getElementById('flowWelcomeModalOverlay');
+      const agreeCheckbox = document.getElementById('agreeTermsCheckbox');
+      const enterBtn = document.getElementById('enterAppBtn');
+      const reopenWelcomeBtn = document.getElementById('reopenWelcomeBtn');
+
+      // Social Drawer Elements
+      const socialOpenBtn = document.getElementById('socialDrawerOpenBtn');
+      const socialCloseBtn = document.getElementById('socialDrawerCloseBtn');
+      const socialBackdrop = document.getElementById('socialDrawerBackdrop');
+      const socialPanel = document.getElementById('socialDrawerPanel');
+      const shareLinkInput = document.getElementById('shareLinkInput');
+      const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+      const copyBtnText = document.getElementById('copyBtnText');
+      const copySuccessBadge = document.getElementById('copySuccessBadge');
+      const nativeShareBtn = document.getElementById('nativeShareBtn');
+
+      const shareTwitterBtn = document.getElementById('shareTwitterBtn');
+      const shareLinkedInBtn = document.getElementById('shareLinkedInBtn');
+      const shareRedditBtn = document.getElementById('shareRedditBtn');
+      const shareFacebookBtn = document.getElementById('shareFacebookBtn');
+
+      // Affiliate Bottom Drawer Elements
+      const bottomDrawer = document.getElementById('bottomAffiliateDrawer');
+      const drawerToggleBar = document.getElementById('drawerToggleBar');
+      const drawerToggleChevron = document.getElementById('drawerToggleChevron');
+      const drawerToggleStatusText = document.getElementById('drawerToggleStatusText');
+
+      let isDrawerCollapsed = false;
+
+      // 1. Welcome Modal Logic
+      function checkAcceptance() {
+        const hasAccepted = localStorage.getItem(STORAGE_KEY) === 'true';
+        if (hasAccepted) {
+          closeWelcomeModal(false);
+          openAffiliateDrawer();
+        } else {
+          openWelcomeModal();
+          // Keep bottom drawer hidden until welcome is handled
+          bottomDrawer.classList.add('hidden-drawer');
+        }
+      }
+
+      function openWelcomeModal() {
+        welcomeOverlay.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
+        welcomeOverlay.classList.add('opacity-100', 'visible');
+      }
+
+      function closeWelcomeModal(savePreference = true) {
+        welcomeOverlay.classList.remove('opacity-100', 'visible');
+        welcomeOverlay.classList.add('opacity-0', 'invisible', 'pointer-events-none');
+        if (savePreference) {
+          localStorage.setItem(STORAGE_KEY, 'true');
+        }
+        // Requirement: open bottom drawer by default immediately after dismissing modal
+        openAffiliateDrawer();
+      }
+
+      // Checkbox enabling 'Enter App'
+      if (agreeCheckbox && enterBtn) {
+        agreeCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+            enterBtn.removeAttribute('disabled');
+            enterBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
+            enterBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
+          } else {
+            enterBtn.setAttribute('disabled', 'true');
+            enterBtn.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
+            enterBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
+          }
+        });
+
+        enterBtn.addEventListener('click', function () {
+          if (agreeCheckbox.checked) {
+            closeWelcomeModal(true);
+          }
+        });
+      }
+
+      // Reopen modal toggle from demo header
+      if (reopenWelcomeBtn) {
+        reopenWelcomeBtn.addEventListener('click', () => {
+          openWelcomeModal();
+        });
+      }
+
+      // 2. Slide-out Social Share Drawer Logic
+      function openSocialDrawer() {
+        socialBackdrop.classList.remove('hidden');
+        setTimeout(() => {
+          socialBackdrop.classList.remove('opacity-0');
+          socialPanel.classList.add('open');
+        }, 10);
+      }
+
+      function closeSocialDrawer() {
+        socialPanel.classList.remove('open');
+        socialBackdrop.classList.add('opacity-0');
+        setTimeout(() => {
+          socialBackdrop.classList.add('hidden');
+        }, 300);
+      }
+
+      if (socialOpenBtn) socialOpenBtn.addEventListener('click', openSocialDrawer);
+      if (socialCloseBtn) socialCloseBtn.addEventListener('click', closeSocialDrawer);
+      if (socialBackdrop) socialBackdrop.addEventListener('click', closeSocialDrawer);
+
+      // Populate Social Links
+      if (shareLinkInput) {
+        shareLinkInput.value = CURRENT_URL;
+      }
+
+      const encodedUrl = encodeURIComponent(CURRENT_URL);
+      const encodedText = encodeURIComponent(SHARE_TEXT);
+
+      if (shareTwitterBtn) {
+        shareTwitterBtn.href = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+      }
+      if (shareLinkedInBtn) {
+        shareLinkedInBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+      }
+      if (shareRedditBtn) {
+        shareRedditBtn.href = `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`;
+      }
+      if (shareFacebookBtn) {
+        shareFacebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+      }
+
+      // Copy to clipboard fallback logic
+      if (copyShareLinkBtn) {
+        copyShareLinkBtn.addEventListener('click', function () {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(shareLinkInput.value).then(onCopySuccess, fallbackCopy);
+            } else {
+              fallbackCopy();
+            }
+          } catch (err) {
+            fallbackCopy();
+          }
+        });
+      }
+
+      function fallbackCopy() {
+        shareLinkInput.focus();
+        shareLinkInput.select();
+        try {
+          document.execCommand('copy');
+          onCopySuccess();
+        } catch (e) {
+          copyBtnText.textContent = 'Failed';
+        }
+      }
+
+      function onCopySuccess() {
+        copyBtnText.textContent = 'Copied!';
+        copySuccessBadge.classList.remove('hidden');
+        setTimeout(() => {
+          copyBtnText.textContent = 'Copy';
+          copySuccessBadge.classList.add('hidden');
+        }, 2500);
+      }
+
+      // Web Share API fallback if supported
+      if (navigator.share && nativeShareBtn) {
+        nativeShareBtn.classList.remove('hidden');
+        nativeShareBtn.classList.add('flex');
+        nativeShareBtn.addEventListener('click', async () => {
+          try {
+            await navigator.share({
+              title: SHARE_TITLE,
+              text: SHARE_TEXT,
+              url: CURRENT_URL
+            });
+          } catch (err) {
+            // User aborted or canceled share
+          }
+        });
+      }
+
+      // 3. Bottom Affiliate Drawer Logic
+      function openAffiliateDrawer() {
+        bottomDrawer.classList.remove('hidden-drawer');
+        bottomDrawer.classList.remove('collapsed');
+        isDrawerCollapsed = false;
+        updateDrawerStateVisuals();
+      }
+
+      function toggleAffiliateDrawer() {
+        isDrawerCollapsed = !isDrawerCollapsed;
+        if (isDrawerCollapsed) {
+          bottomDrawer.classList.add('collapsed');
+        } else {
+          bottomDrawer.classList.remove('collapsed');
+        }
+        updateDrawerStateVisuals();
+      }
+
+      function updateDrawerStateVisuals() {
+        if (isDrawerCollapsed) {
+          drawerToggleChevron.style.transform = 'rotate(180deg)';
+          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Expand Partner Hub';
+        } else {
+          drawerToggleChevron.style.transform = 'rotate(0deg)';
+          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Collapse Menu';
+        }
+      }
+
+      if (drawerToggleBar) {
+        drawerToggleBar.addEventListener('click', toggleAffiliateDrawer);
+      }
+
+      // Initialize status on window load
+      window.addEventListener('DOMContentLoaded', checkAcceptance);
+      // Run once immediately in case DOM is already ready
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        checkAcceptance();
+      }
+    })();
+  </script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -2840,233 +3068,6 @@
   <!-- END: MODULAR DROP-IN SNIPPET                                             -->
   <!-- ========================================================================= -->
 
-  <script>
-    (function initFlowModularSuite() {
-      // Storage Key
-      const STORAGE_KEY = 'flowcraft_terms_accepted_v1';
-      const CURRENT_URL = window.location.href;
-      const SHARE_TITLE = 'FlowCraft - Tech-Modern Design Flow System & Planner';
-      const SHARE_TEXT = 'Check out this design flow system and planner for developers, designers, and creative builders!';
-
-      // DOM Elements
-      const welcomeOverlay = document.getElementById('flowWelcomeModalOverlay');
-      const agreeCheckbox = document.getElementById('agreeTermsCheckbox');
-      const enterBtn = document.getElementById('enterAppBtn');
-      const reopenWelcomeBtn = document.getElementById('reopenWelcomeBtn');
-
-      // Social Drawer Elements
-      const socialOpenBtn = document.getElementById('socialDrawerOpenBtn');
-      const socialCloseBtn = document.getElementById('socialDrawerCloseBtn');
-      const socialBackdrop = document.getElementById('socialDrawerBackdrop');
-      const socialPanel = document.getElementById('socialDrawerPanel');
-      const shareLinkInput = document.getElementById('shareLinkInput');
-      const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
-      const copyBtnText = document.getElementById('copyBtnText');
-      const copySuccessBadge = document.getElementById('copySuccessBadge');
-      const nativeShareBtn = document.getElementById('nativeShareBtn');
-
-      const shareTwitterBtn = document.getElementById('shareTwitterBtn');
-      const shareLinkedInBtn = document.getElementById('shareLinkedInBtn');
-      const shareRedditBtn = document.getElementById('shareRedditBtn');
-      const shareFacebookBtn = document.getElementById('shareFacebookBtn');
-
-      // Affiliate Bottom Drawer Elements
-      const bottomDrawer = document.getElementById('bottomAffiliateDrawer');
-      const drawerToggleBar = document.getElementById('drawerToggleBar');
-      const drawerToggleChevron = document.getElementById('drawerToggleChevron');
-      const drawerToggleStatusText = document.getElementById('drawerToggleStatusText');
-
-      let isDrawerCollapsed = false;
-
-      // 1. Welcome Modal Logic
-      function checkAcceptance() {
-        const hasAccepted = localStorage.getItem(STORAGE_KEY) === 'true';
-        if (hasAccepted) {
-          closeWelcomeModal(false);
-          openAffiliateDrawer();
-        } else {
-          openWelcomeModal();
-          // Keep bottom drawer hidden until welcome is handled
-          bottomDrawer.classList.add('hidden-drawer');
-        }
-      }
-
-      function openWelcomeModal() {
-        welcomeOverlay.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
-        welcomeOverlay.classList.add('opacity-100', 'visible');
-      }
-
-      function closeWelcomeModal(savePreference = true) {
-        welcomeOverlay.classList.remove('opacity-100', 'visible');
-        welcomeOverlay.classList.add('opacity-0', 'invisible', 'pointer-events-none');
-        if (savePreference) {
-          localStorage.setItem(STORAGE_KEY, 'true');
-        }
-        // Requirement: open bottom drawer by default immediately after dismissing modal
-        openAffiliateDrawer();
-      }
-
-      // Checkbox enabling 'Enter App'
-      if (agreeCheckbox && enterBtn) {
-        agreeCheckbox.addEventListener('change', function () {
-          if (this.checked) {
-            enterBtn.removeAttribute('disabled');
-            enterBtn.classList.remove('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
-            enterBtn.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
-          } else {
-            enterBtn.setAttribute('disabled', 'true');
-            enterBtn.classList.add('bg-slate-800', 'text-slate-500', 'cursor-not-allowed', 'opacity-60');
-            enterBtn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-indigo-600', 'hover:from-cyan-400', 'hover:to-indigo-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/25', 'cursor-pointer');
-          }
-        });
-
-        enterBtn.addEventListener('click', function () {
-          if (agreeCheckbox.checked) {
-            closeWelcomeModal(true);
-          }
-        });
-      }
-
-      // Reopen modal toggle from demo header
-      if (reopenWelcomeBtn) {
-        reopenWelcomeBtn.addEventListener('click', () => {
-          openWelcomeModal();
-        });
-      }
-
-      // 2. Slide-out Social Share Drawer Logic
-      function openSocialDrawer() {
-        socialBackdrop.classList.remove('hidden');
-        setTimeout(() => {
-          socialBackdrop.classList.remove('opacity-0');
-          socialPanel.classList.add('open');
-        }, 10);
-      }
-
-      function closeSocialDrawer() {
-        socialPanel.classList.remove('open');
-        socialBackdrop.classList.add('opacity-0');
-        setTimeout(() => {
-          socialBackdrop.classList.add('hidden');
-        }, 300);
-      }
-
-      if (socialOpenBtn) socialOpenBtn.addEventListener('click', openSocialDrawer);
-      if (socialCloseBtn) socialCloseBtn.addEventListener('click', closeSocialDrawer);
-      if (socialBackdrop) socialBackdrop.addEventListener('click', closeSocialDrawer);
-
-      // Populate Social Links
-      if (shareLinkInput) {
-        shareLinkInput.value = CURRENT_URL;
-      }
-
-      const encodedUrl = encodeURIComponent(CURRENT_URL);
-      const encodedText = encodeURIComponent(SHARE_TEXT);
-
-      if (shareTwitterBtn) {
-        shareTwitterBtn.href = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
-      }
-      if (shareLinkedInBtn) {
-        shareLinkedInBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-      }
-      if (shareRedditBtn) {
-        shareRedditBtn.href = `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`;
-      }
-      if (shareFacebookBtn) {
-        shareFacebookBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-      }
-
-      // Copy to clipboard fallback logic
-      if (copyShareLinkBtn) {
-        copyShareLinkBtn.addEventListener('click', function () {
-          try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(shareLinkInput.value).then(onCopySuccess, fallbackCopy);
-            } else {
-              fallbackCopy();
-            }
-          } catch (err) {
-            fallbackCopy();
-          }
-        });
-      }
-
-      function fallbackCopy() {
-        shareLinkInput.focus();
-        shareLinkInput.select();
-        try {
-          document.execCommand('copy');
-          onCopySuccess();
-        } catch (e) {
-          copyBtnText.textContent = 'Failed';
-        }
-      }
-
-      function onCopySuccess() {
-        copyBtnText.textContent = 'Copied!';
-        copySuccessBadge.classList.remove('hidden');
-        setTimeout(() => {
-          copyBtnText.textContent = 'Copy';
-          copySuccessBadge.classList.add('hidden');
-        }, 2500);
-      }
-
-      // Web Share API fallback if supported
-      if (navigator.share && nativeShareBtn) {
-        nativeShareBtn.classList.remove('hidden');
-        nativeShareBtn.classList.add('flex');
-        nativeShareBtn.addEventListener('click', async () => {
-          try {
-            await navigator.share({
-              title: SHARE_TITLE,
-              text: SHARE_TEXT,
-              url: CURRENT_URL
-            });
-          } catch (err) {
-            // User aborted or canceled share
-          }
-        });
-      }
-
-      // 3. Bottom Affiliate Drawer Logic
-      function openAffiliateDrawer() {
-        bottomDrawer.classList.remove('hidden-drawer');
-        bottomDrawer.classList.remove('collapsed');
-        isDrawerCollapsed = false;
-        updateDrawerStateVisuals();
-      }
-
-      function toggleAffiliateDrawer() {
-        isDrawerCollapsed = !isDrawerCollapsed;
-        if (isDrawerCollapsed) {
-          bottomDrawer.classList.add('collapsed');
-        } else {
-          bottomDrawer.classList.remove('collapsed');
-        }
-        updateDrawerStateVisuals();
-      }
-
-      function updateDrawerStateVisuals() {
-        if (isDrawerCollapsed) {
-          drawerToggleChevron.style.transform = 'rotate(180deg)';
-          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Expand Partner Hub';
-        } else {
-          drawerToggleChevron.style.transform = 'rotate(0deg)';
-          if (drawerToggleStatusText) drawerToggleStatusText.textContent = 'Collapse Menu';
-        }
-      }
-
-      if (drawerToggleBar) {
-        drawerToggleBar.addEventListener('click', toggleAffiliateDrawer);
-      }
-
-      // Initialize status on window load
-      window.addEventListener('DOMContentLoaded', checkAcceptance);
-      // Run once immediately in case DOM is already ready
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        checkAcceptance();
-      }
-    })();
-  </script>
+ 
 </body>
 </html>
