@@ -2582,7 +2582,7 @@
 
       // 1. Initial State Assessment
       function checkAcceptance() {
-        const hasAccepted = localStorage.getItem(STORAGE_KEY) === 'true';
+        const hasAccepted = localStorage.getItem(STORAGE_KEY) === 'false';
         if (hasAccepted) {
           // Returning user: dismiss welcome modal and reveal the bottom drawer
           closeWelcomeModal(false, true);
